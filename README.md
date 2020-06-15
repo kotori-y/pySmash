@@ -1,0 +1,1 @@
+Smash molecule based on fingerprint
