@@ -116,9 +116,13 @@ def getSubstructSmi(mol, atomID, radius):
 
 def SmashMolWithMorgan(mol, 
                        radius=2, 
+                       minRadius=1,
                        nBits=1024, 
                        sparse=False,
                        ):
+    """
+    
+    """
     if sparse:
         bitInfo = CalculateSparseMorgan(mol, 
                                         radius=radius)
@@ -131,8 +135,12 @@ def SmashMolWithMorgan(mol,
     
     for info in bitInfo.values():
         a, r = info[0]
-        smi2 = getSubstructSmi(mol, a, r)
-        substrcutures.append(smi2)
+
+        if r >= minRadius:
+            smi2 = getSubstructSmi(mol, a, r)
+            substrcutures.append(smi2)
+        else:
+            pass
     
     substrcutures = list(set(substrcutures))
     return substrcutures
@@ -143,4 +151,5 @@ def SmashMolWithMorgan(mol,
 
 if '__main__' == __name__:
     mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
-    substrcuture = SmashMolWithMorgan(mol)
+    substrcutures = SmashMolWithMorgan(mol, radius=3, minRadius=2, sparse=True)
+    print(substrcutures)

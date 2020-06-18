@@ -18,15 +18,18 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
-from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
-from .morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
+import sys
+sys.path.append('.')
+from daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+from morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
 
 
 class Morgan(object):
     
     def __init__(self, mols, 
                  radius=2, nBits=1024, 
-                 sparse=False, n_jobs=1):
+                 sparse=False, minRadius=1,
+                 n_jobs=1):
         """
         Init
 
@@ -43,6 +46,8 @@ class Morgan(object):
         sparse : bool, optional
             which generate fragment based on sparse fingerprint. 
             The default is False.
+        minRadius : int, optional
+            minimum radius of environment. The default is 1.
         n_jobs : int, optional
             The number of CPUs to use to do the computation
             The default is 1
@@ -56,6 +61,7 @@ class Morgan(object):
         self.radius = radius
         self.nBits = nBits if not sparse else 'sparse'
         self.sparse = sparse
+        self.minRadius = minRadius
         self.n_jobs = n_jobs if n_jobs >=1 else None
         
     def GetMorganFingerAndBitInfo(self):
@@ -86,7 +92,7 @@ class Morgan(object):
         
         func = partial(SmashMolWithMorgan, 
                        radius=self.radius, nBits=self.nBits,
-                       sparse=self.sparse)
+                       sparse=self.sparse, minRadius=self.minRadius)
                        
         
         pool = Pool(self.n_jobs)
@@ -221,10 +227,10 @@ if '__main__' == __name__:
     
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
     
-    daylight = Daylight(mols, sparse=True)
-    daylight_matrix = daylight.GetDaylightMatrix()
+    # daylight = Daylight(mols, sparse=True)
+    # daylight_matrix = daylight.GetDaylightMatrix()
     
-    morgan = Morgan(mols, sparse=True)
+    morgan = Morgan(mols, sparse=True, radius=4, minRadius=1)
     morgan_matrix = morgan.GetMorganMatrix()
-    
+    print(len(morgan_matrix))
     
