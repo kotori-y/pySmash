@@ -100,7 +100,8 @@ class Morgan(object):
         pool.close()
         pool.join()
         
-        unique = list(set(sum(substructures, [])))
+        unique = [x for substructure in substructures for x in substructure]
+        unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
         
         num = len(unique)
@@ -194,7 +195,8 @@ class Daylight(object):
         pool.close()
         pool.join()
         
-        unique = list(set(sum(substructures, [])))
+        unique = [x for substructure in substructures for x in substructure]
+        unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
         
         num = len(unique)
