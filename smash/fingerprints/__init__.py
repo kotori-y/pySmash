@@ -18,10 +18,8 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
-import sys
-sys.path.append('.')
-from daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
-from morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
+from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+from .morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
 
 
 class Morgan(object):
