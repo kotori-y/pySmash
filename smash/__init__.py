@@ -105,11 +105,11 @@ def ShowResult(subMatrix, subPvalue, labels,
                pvalue_field='Val', topx=50):
     
     if smiles_field is not None:
-        subMatrix.set_index(smiles_field, inplace=True)
+        subMatrix = subMatrix.set_index(smiles_field)
     if smarts_field is not None:
-        subPvalue.set_index(smarts_field, inplace=True)
+        subPvalue = subPvalue.set_index(smarts_field)
     
-    subPvalue.sort_values(pvalue_field, inplace=True)
+    subPvalue = subPvalue.sort_values(pvalue_field)
     
     imgs = []
     smas = subPvalue.index[:topx]

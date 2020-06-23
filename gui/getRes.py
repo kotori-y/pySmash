@@ -148,7 +148,7 @@ def getFingerprintRes(textPad, data, **kwgrs):
     subMatrix['SMILES'] = smis
     add('Successed!\n')
     ############# Calculate p-value #############
-
+    
     return subMatrix, subPvalue, labels
 
 
