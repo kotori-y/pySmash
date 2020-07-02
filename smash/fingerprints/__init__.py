@@ -104,7 +104,7 @@ class Morgan(object):
         
         num = len(unique)
         
-        matrix = np.zeros((len(self.mols), num), dtype=np.int16)
+        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
         for idx, arr in enumerate(matrix):
             substructure = substructures[idx]
             for item in substructure:
@@ -199,7 +199,7 @@ class Daylight(object):
         
         num = len(unique)
         
-        matrix = np.zeros((len(self.mols), num), dtype=np.int16)
+        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
         for idx, arr in enumerate(matrix):
             substructure = substructures[idx]
             for item in substructure:

@@ -12,6 +12,7 @@ Created on Sun Jun 21 17:15:00 2020
 """
 
 
+import multiprocessing as mp
 import os
 import time
 import socket
@@ -53,11 +54,10 @@ class SmashGui(Tk):
 
         self.thread_run = None
         self.thread_run_stop = Event()
-
         try:
-            self.iconbitmap('icon.ico')
+            self.iconbitmap(r"icon.ico")
         except:
-            self.iconbitmap('gui\icon.ico')  # for vscode
+            self.iconbitmap(r"gui\smash\icon.ico")
 
     def readFile(self, **kwgrs):
 
@@ -114,8 +114,13 @@ class SmashGui(Tk):
                 max_cols=10, justify='center'))
             self.previewPad['state'] = 'disabled'
         else:
-            self.html = ShowResult(self.subMatrix, self.subPvalue, self.labels,
-                                   smarts_field=None, topx=display)
+            try:
+                aimLabel = float(self.cmbAim.get())
+            except:
+                pass
+            self.html = ShowResult(self.subMatrix, self.subPvalue,
+                                   smarts_field=None, aimLabel=aimLabel,
+                                   topx=display)
 
             self.previewPad.insert(
                 tk.END, self.html.iloc[:, :-1].to_string(max_cols=10, justify='center'))
@@ -207,6 +212,23 @@ class SmashGui(Tk):
         self.previewPad['state'] = 'disabled'
 
     def main(self):
+
+        kwgrs = {'smiles_field': self.cmbSmiles.get(),
+                    'label_field': self.cmbLabel.get(),
+                    'fingerprint': self.cmbFP.get(),
+                    'radius': self.Radius.get(),
+                    'minRadius': self.minRadius.get(),
+                    'minPath': self.minPath.get(),
+                    'maxPath': self.maxPath.get(),
+                    'nBits': self.nBits.get(),
+                    'sparse': self.Sparse.get(),
+                    'minRatio': self.minRatio.get(),
+                    'minNum': self.minNum.get(),
+                    'aimLabel': self.cmbAim.get(),
+                    'n_jobs': self.n_jobs.get()}
+        
+
+
         def add(words):
             textPad['state'] = 'normal'
             textPad.insert(tk.END, words)
@@ -216,12 +238,12 @@ class SmashGui(Tk):
         self.process.geometry('400x300+500+200')
         # self.process.resizable(0,0)
         self.process.title('Running...')
-        lblnow = Label(self.process, text='Now Processing',
+        lblnow = Label(self.process, text='Processing',
                        font=self.lblFont)
-        lblnow.place(x=125, y=40)
+        lblnow.place(x=135, y=40)
 
-        textPad = ScrolledText(self.process, width=43, height=13)
-        textPad.place(x=58, y=85)
+        textPad = ScrolledText(self.process, width=48, height=13)
+        textPad.place(x=43, y=85)
         textPad['state'] = 'disable'
 
         btnNext = Button(self.process, text='Next', command=self.preview)
@@ -235,22 +257,8 @@ class SmashGui(Tk):
         add('Load file... ')
         data = self.readFile()
 
-        kwgrs = {'smiles_field': self.cmbSmiles.get(),
-                 'label_field': self.cmbLabel.get(),
-                 'fingerprint': self.cmbFP.get(),
-                 'radius': self.Radius.get(),
-                 'minRadius': self.minRadius.get(),
-                 'minPath': self.minPath.get(),
-                 'maxPath': self.maxPath.get(),
-                 'nBits': self.nBits.get(),
-                 'sparse': self.Sparse.get(),
-                 'minRatio': self.minRatio.get(),
-                 'minNum': self.minNum.get(),
-                 'aimLabel': self.cmbAim.get(),
-                 'n_jobs': self.n_jobs.get()}
-
-        self.subMatrix, self.subPvalue, self.labels = getFingerprintRes(
-            textPad, data, **kwgrs)
+        self.subMatrix, self.subPvalue = getFingerprintRes(textPad,
+                                                        data, **kwgrs)
         time.sleep(1)
         add('\nFinished!')
 
@@ -271,13 +279,19 @@ class SmashGui(Tk):
                 self.cmbSmiles["values"] = self.cols
                 self.cmbLabel["values"] = self.cols
 
-                self.cmbSmiles['state'], self.cmbLabel['state'], self.cmbAim['state'],\
-                    self.cmbFP['state'] = ['readonly']*4
+                self.cmbSmiles['state'] = 'readonly'
+                # self.cmbLabel['state'], self.cmbAim['state'],\
+                #     self.cmbFP['state'] = ['readonly']*4
             else:
                 disable()
             self.txtFile['state'] = 'readonly'
 
+        def _changesmiles(*args):
+                    self.cmbLabel['state']='readonly'
+
         def chooseAimLabel(*args):
+            self.cmbAim['state']='readonly'
+            self.cmbFP['state']='readonly'
             self.cmbAim.set('')
             data = self.readFile(usecols=[self.cmbLabel.get()])
             labels = list(set(data.iloc[:, 0]))
@@ -352,6 +366,8 @@ class SmashGui(Tk):
 
         self.cmbSmiles = ttk.Combobox(self, width=12)
         self.cmbSmiles.place(x=85, y=100)
+        
+        self.cmbSmiles.bind("<<ComboboxSelected>>", _changesmiles)
 
         lbllabel = Label(self, text='Label',
                          font=('Times New Roman', 13),
@@ -403,7 +419,7 @@ class SmashGui(Tk):
         lblnBits = Label(self, text='nBits', bg=self.bg,
                          font=('Times New Roman', 13))
         lblnBits.place(x=180, y=205)
-        self.nBits = tk.IntVar(value=1)
+        self.nBits = tk.IntVar(value=1024)
         txtnBits = Entry(self, width=6, textvariable=self.nBits)
         txtnBits.place(x=243, y=205)
 
@@ -484,5 +500,6 @@ class SmashGui(Tk):
 
 
 if '__main__' == __name__:
+    mp.freeze_support()
     gui = SmashGui()
     gui.mainloop()
