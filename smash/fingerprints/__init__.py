@@ -20,6 +20,7 @@ import pandas as pd
 
 from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
 from .morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
+from .ifg import IdentifyFunctionalGroups
 
 
 class Morgan(object):
@@ -209,6 +210,34 @@ class Daylight(object):
         return matrix
 
         
+
+class FunctionGroup(object):
+
+    def __init__(self, mols, n_jobs=1):
+        """Init
+
+        Parameters
+        ----------
+        mols : a list of rdkit.Chem.rdchem.Mol
+            the aim molecule library.
+        """        
+        self.mols = mols
+        self.n_jobs = n_jobs
+
+    def GetFunctionGroups(self):
+
+        pool = Pool(self.n_jobs)
+        self.fgs = pool.map_async(IdentifyFunctionalGroups, self.mols).get()
+        pool.close()
+        pool.join()
+
+        return self.fgs
+
+
+
+
+
+    
         
 if '__main__' == __name__:
     from rdkit import Chem
@@ -230,7 +259,9 @@ if '__main__' == __name__:
     # daylight = Daylight(mols, sparse=True)
     # daylight_matrix = daylight.GetDaylightMatrix()
     
-    morgan = Morgan(mols, sparse=True, radius=4, minRadius=1)
-    morgan_matrix = morgan.GetMorganMatrix()
-    print(len(morgan_matrix))
-    
+    # morgan = Morgan(mols, sparse=True, radius=4, minRadius=1)
+    # morgan_matrix = morgan.GetMorganMatrix()
+    # print(len(morgan_matrix))
+
+    fg = FunctionGroup(mols)
+    print(fg.GetFunctionGroups())
