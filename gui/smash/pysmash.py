@@ -328,6 +328,9 @@ class SmashGui(Tk):
                 txtminRadius['state'], txtRadius['state'] = ['disable']*2
                 txtminPath['state'], txtmaxPath['state'] = ['normal']*2
 
+            elif self.cmbFP.get() == 'Function Group':
+                cmbSparse['state'], txtnBits['state'], txtminRadius['state'], \
+                    txtRadius['state'], txtminPath['state'], txtmaxPath['state'] = ['disable']*6
         # global image
         # image = tk.PhotoImage(file='logo.gif')
         # imgLabel = Label(self, image=image).place(x=170,y=20)
@@ -398,7 +401,7 @@ class SmashGui(Tk):
         lblFP.place(x=50, y=170)
 
         self.cmbFP = ttk.Combobox(self, width=14)
-        self.cmbFP['values'] = ['ECFP', 'Daylight']
+        self.cmbFP['values'] = ['ECFP', 'Daylight', 'Function Group']
         self.cmbFP.place(x=135, y=170)
         self.cmbFP['state'] = "readonly"
         self.cmbFP.bind("<<ComboboxSelected>>", changestate)

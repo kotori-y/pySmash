@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import Morgan, Daylight, Pvalue, ShowResult
+from smash import Morgan, Daylight, FunctionGroup, Pvalue, ShowResult
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -121,6 +121,10 @@ def getFingerprintRes(textPad, data, **kwgrs):
                             nBits=kwgrs.get('nBits'),
                             n_jobs=n_jobs)
         subMatrix = daylight.GetDaylightMatrix()
+
+    elif fingerprint == 'Function Group':
+        fg = FunctionGroup(mols, n_jobs=n_jobs)
+        subMatrix = fg.GetFunctionGroupsMatrix()
         # print(subMatrix)
     add('Successed!\n\n')
     ############# Obtain Fingerprint Matrix #############
