@@ -18,9 +18,14 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
-from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
-from .morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
-from .ifg import IdentifyFunctionalGroups
+try:
+    from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+    from .morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
+    from .ifg import IdentifyFunctionalGroups
+except:
+    from daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+    from morgan import CalculateMorgan, CalculateSparseMorgan, SmashMolWithMorgan
+    from ifg import IdentifyFunctionalGroups
 
 
 class Morgan(object):
@@ -223,6 +228,7 @@ class FunctionGroup(object):
         """        
         self.mols = mols
         self.n_jobs = n_jobs
+        self.fgs = None
 
     def GetFunctionGroups(self):
 
@@ -233,12 +239,34 @@ class FunctionGroup(object):
 
         return self.fgs
 
+    def GetFunctionGroupsMatrix(self):
+
+        if not self.fgs:
+            fgs = self.GetFunctionGroups()
+        else:
+            pass
+        
+        unique = [x for fg in fgs for x in fg]
+        unique = list(set(unique))
+        dic = dict(zip(unique, range(len(unique))))
+        
+        num = len(unique)
+        
+        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
+        for idx, arr in enumerate(matrix):
+            fg = fgs[idx]
+            for item in fg:
+                arr[dic[item]] = 1
+            
+        matrix = pd.DataFrame(matrix, columns=unique)
+        return matrix        
+
 
 
 
 
     
-        
+    
 if '__main__' == __name__:
     from rdkit import Chem
     
@@ -264,4 +292,4 @@ if '__main__' == __name__:
     # print(len(morgan_matrix))
 
     fg = FunctionGroup(mols)
-    print(fg.GetFunctionGroups())
+    print(fg.GetFunctionGroupsMatrix())
