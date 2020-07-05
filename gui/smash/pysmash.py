@@ -119,7 +119,7 @@ class SmashGui(Tk):
             except:
                 pass
             self.html = ShowResult(self.subMatrix, self.subPvalue,
-                                   smarts_field=None, aimLabel=aimLabel,
+                                   smarts_field=None, aim_label=aimLabel,
                                    topx=display)
 
             self.previewPad.insert(

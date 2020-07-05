@@ -100,22 +100,23 @@ def HighlightAtoms(mol,highlightAtoms,figsize=[400,200],kekulize=True):
     return SVG(_revised(svg))
       
         
-def ShowResult(subMatrix, subPvalue, labels, 
+def ShowResult(subMatrix, subPvalue, label_field='Label', 
                smiles_field='SMILES', smarts_field='SMARTS',
-               pvalue_field='Val', topx=50):
+               pvalue_field='Val', aim_label=1, topx=50):
     
     if smiles_field is not None:
         subMatrix = subMatrix.set_index(smiles_field)
     if smarts_field is not None:
         subPvalue = subPvalue.set_index(smarts_field)
     
+    labels = subMatrix[label_field].values
     subPvalue = subPvalue.sort_values(pvalue_field)
     
     imgs = []
     smas = subPvalue.index[:topx]
     for sma in smas:
         patt = Chem.MolFromSmarts(sma)
-        smi = subMatrix[(subMatrix[sma]==1) & (labels==1)
+        smi = subMatrix[(subMatrix[sma]==1) & (labels==aim_label)
                         ].sample(n=1).index.values[0]
         mol = Chem.MolFromSmiles(smi)
         atoms = mol.GetSubstructMatches(patt)[0]
@@ -123,7 +124,7 @@ def ShowResult(subMatrix, subPvalue, labels,
         imgs.append(svg.data)
     
     ns = subMatrix.loc[:, smas].sum(axis=0).values
-    ms = subMatrix.loc[:, smas][labels==1].sum(axis=0).values
+    ms = subMatrix.loc[:, smas][labels==aim_label].sum(axis=0).values
     pvalues = subPvalue[pvalue_field][:topx].map(
         lambda x: '{:.3e}'.format(x)).values
     acc = list(map(lambda x: '{:.3f}'.format(x), ms/ns))
