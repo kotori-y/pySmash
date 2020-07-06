@@ -22,7 +22,7 @@ from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
 from IPython.display import SVG
 from rdkit.Chem import rdDepictor
-from .fingerprints import Circular,Path, FunctionGroup
+from .fingerprints import Circular, Path, FunctionGroup
 
 
 def Pvalue(n, m, ns, ms):

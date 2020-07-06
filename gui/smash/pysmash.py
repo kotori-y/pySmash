@@ -85,7 +85,7 @@ class SmashGui(Tk):
     def downloadRes(self, data, datype, **kwgrs):
         self.previewRes(data, datype)
         if datype == 'df':
-            savefile = asksaveasfilename(defaultextension=".csv")
+            savefile = asksaveasfilename(filetypes=(("CSV file", "*.csv*"), ))
             if savefile:
                 try:
                     data.to_csv(savefile, **kwgrs)
@@ -95,7 +95,8 @@ class SmashGui(Tk):
             else:
                 pass
         else:
-            savefile = asksaveasfilename(defaultextension=".html")
+            savefile = asksaveasfilename(
+                filetypes=(("Html file", "*.html*"), ))
             if savefile:
                 try:
                     self.html.to_html(savefile, **kwgrs)
@@ -128,22 +129,23 @@ class SmashGui(Tk):
 
     def preview(self):
 
-        view = tk.Toplevel(self)
-        view.geometry('800x650+500+300')
+        self.process.destroy()
+        self.view = tk.Toplevel(self)
+        self.view.geometry('800x650+500+300')
 
-        lblsubMatrix = Label(view, text='subMatrix',
+        lblsubMatrix = Label(self.view, text='subMatrix',
                              fg=self.fg, font=self.lblFont)
         lblsubMatrix.place(x=100, y=80)
 
-        lblsubPvalue = Label(view, text='subPvalue',
+        lblsubPvalue = Label(self.view, text='subPvalue',
                              fg=self.fg, font=self.lblFont)
         lblsubPvalue.place(x=350, y=80)
 
-        lblsubHTML = Label(view, text='Summray',
+        lblsubHTML = Label(self.view, text='Summray',
                            fg=self.fg, font=self.lblFont)
         lblsubHTML.place(x=600, y=80)
 
-        btnPreviewMatrix = Button(view, text='Preview',
+        btnPreviewMatrix = Button(self.view, text='Preview',
                                   bg=self.btg,
                                   font=('Times New Roman', 12),
                                   width=8,
@@ -152,7 +154,7 @@ class SmashGui(Tk):
                                   )
         btnPreviewMatrix.place(x=60, y=120)
 
-        btnDownloadMatrix = Button(view, text='Download',
+        btnDownloadMatrix = Button(self.view, text='Download',
                                    bg=self.btg,
                                    font=('Times New Roman', 12),
                                    width=8,
@@ -161,7 +163,7 @@ class SmashGui(Tk):
                                    )
         btnDownloadMatrix.place(x=150, y=120)
 
-        btnPreviewPvalue = Button(view, text='Preview',
+        btnPreviewPvalue = Button(self.view, text='Preview',
                                   bg=self.btg,
                                   font=('Times New Roman', 12),
                                   width=8,
@@ -170,7 +172,7 @@ class SmashGui(Tk):
                                   )
         btnPreviewPvalue.place(x=310, y=120)
 
-        btnDownloadPvalue = Button(view, text='Download',
+        btnDownloadPvalue = Button(self.view, text='Download',
                                    bg=self.btg,
                                    font=('Times New Roman', 12),
                                    width=8,
@@ -178,7 +180,7 @@ class SmashGui(Tk):
                                        data=self.subPvalue, datype='df', index_label='SMARTS'))
         btnDownloadPvalue.place(x=400, y=120)
 
-        btnPreviewHTML = Button(view, text='Preview',
+        btnPreviewHTML = Button(self.view, text='Preview',
                                 bg=self.btg,
                                 font=('Times New Roman', 12),
                                 width=8,
@@ -187,7 +189,7 @@ class SmashGui(Tk):
                                 )
         btnPreviewHTML.place(x=560, y=120)
 
-        btnDownloadHTML = Button(view, text='Download',
+        btnDownloadHTML = Button(self.view, text='Download',
                                  bg=self.btg,
                                  font=('Times New Roman', 12),
                                  width=8,
@@ -195,17 +197,17 @@ class SmashGui(Tk):
                                      data=None, datype='HTML', escape=False))
         btnDownloadHTML.place(x=650, y=120)
 
-        self.previewPad = Text(view, width=105, height=35,
+        self.previewPad = Text(self.view, width=105, height=35,
                                wrap="none", borderwidth=0,
                                )
         self.previewPad.place(x=20, y=160)
 
-        vscroll = Scrollbar(view, orient=tk.VERTICAL,
+        vscroll = Scrollbar(self.view, orient=tk.VERTICAL,
                             command=self.previewPad.yview)
         self.previewPad['yscroll'] = vscroll.set
         vscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        hscroll = Scrollbar(view, orient=tk.HORIZONTAL,
+        hscroll = Scrollbar(self.view, orient=tk.HORIZONTAL,
                             command=self.previewPad.xview)
         self.previewPad['xscroll'] = hscroll.set
         hscroll.pack(side=tk.BOTTOM, fill=tk.X)
@@ -214,20 +216,17 @@ class SmashGui(Tk):
     def main(self):
 
         kwgrs = {'smiles_field': self.cmbSmiles.get(),
-                    'label_field': self.cmbLabel.get(),
-                    'fingerprint': self.cmbFP.get(),
-                    'radius': self.Radius.get(),
-                    'minRadius': self.minRadius.get(),
-                    'minPath': self.minPath.get(),
-                    'maxPath': self.maxPath.get(),
-                    'nBits': self.nBits.get(),
-                    'folded': self.Folded.get(),
-                    'minRatio': self.minRatio.get(),
-                    'minNum': self.minNum.get(),
-                    'aimLabel': self.cmbAim.get(),
-                    'n_jobs': self.n_jobs.get()}
-        
-
+                 'label_field': self.cmbLabel.get(),
+                 'fingerprint': self.cmbFP.get(),
+                 'radius': self.Radius.get(),
+                 'minRadius': self.minRadius.get(),
+                 'minPath': self.minPath.get(),
+                 'maxPath': self.maxPath.get(),
+                 'folded': False,
+                 'minRatio': self.minRatio.get(),
+                 'minNum': self.minNum.get(),
+                 'aimLabel': self.cmbAim.get(),
+                 'n_jobs': self.n_jobs.get()}
 
         def add(words):
             textPad['state'] = 'normal'
@@ -258,7 +257,7 @@ class SmashGui(Tk):
         data = self.readFile()
 
         self.subMatrix, self.subPvalue = getFingerprintRes(textPad,
-                                                        data, **kwgrs)
+                                                           data, **kwgrs)
         time.sleep(1)
         add('\nFinished!')
 
@@ -287,28 +286,27 @@ class SmashGui(Tk):
             self.txtFile['state'] = 'readonly'
 
         def _changesmiles(*args):
-                    self.cmbLabel['state']='readonly'
+            self.cmbLabel['state'] = 'readonly'
 
         def chooseAimLabel(*args):
-            self.cmbAim['state']='readonly'
-            self.cmbFP['state']='readonly'
+            self.cmbAim['state'] = 'readonly'
+            self.cmbFP['state'] = 'readonly'
             self.cmbAim.set('')
             data = self.readFile(usecols=[self.cmbLabel.get()])
             labels = list(set(data.iloc[:, 0]))
             self.cmbAim['values'] = labels
             self.cmbAim.current(1)
 
-        def ignorenBits(*args):
-            if self.Folded.get():
-                txtnBits['state'] = 'normal'
-            else:
-                txtnBits['state'] = 'disable'
+        # def ignorenBits(*args):
+        #     if self.Folded.get():
+        #         txtnBits['state'] = 'normal'
+        #     else:
+        #         txtnBits['state'] = 'disable'
 
         def disable(*args):
-            cmbFolded['state'], txtnBits['state'], txtminRadius['state'],\
-                txtRadius['state'], txtminPath['state'], txtmaxPath['state'],\
-                txtminNum['state'], txtminRatio['state'], txtPvalue['state'],\
-                txtnjobs['state'], btnRun['state'] = ['disable']*11
+            txtminRadius['state'], txtRadius['state'], txtminPath['state'],\
+                txtmaxPath['state'], txtminNum['state'], txtminRatio['state'],\
+                    txtPvalue['state'], txtnjobs['state'], btnRun['state'] = ['disable']*9
 
             self.cmbSmiles['state'], self.cmbLabel['state'], self.cmbAim['state'],\
                 self.cmbFP['state'] = ['disable']*4
@@ -317,20 +315,20 @@ class SmashGui(Tk):
             txtminNum['state'], txtminRatio['state'], txtPvalue['state'],\
                 txtnjobs['state'], btnRun['state'] = ['normal']*5
             if self.cmbFP.get() == 'Circular':
-                cmbFolded['state'] = 'readonly'
-                ignorenBits()
+                # cmbFolded['state'] = 'readonly'
+                # ignorenBits()
                 txtminRadius['state'], txtRadius['state'] = ['normal']*2
                 txtminPath['state'], txtmaxPath['state'] = ['disable']*2
 
             elif self.cmbFP.get() == 'Path':
-                cmbFolded['state'] = 'normal'
-                ignorenBits()
+                # cmbFolded['state'] = 'normal'
+                # ignorenBits()
                 txtminRadius['state'], txtRadius['state'] = ['disable']*2
                 txtminPath['state'], txtmaxPath['state'] = ['normal']*2
 
             elif self.cmbFP.get() == 'Function Group':
-                cmbFolded['state'], txtnBits['state'], txtminRadius['state'], \
-                    txtRadius['state'], txtminPath['state'], txtmaxPath['state'] = ['disable']*6
+                txtminRadius['state'], txtRadius['state'],\
+                    txtminPath['state'], txtmaxPath['state'] = ['disable']*4
         # global image
         # image = tk.PhotoImage(file='logo.gif')
         # imgLabel = Label(self, image=image).place(x=170,y=20)
@@ -369,7 +367,7 @@ class SmashGui(Tk):
 
         self.cmbSmiles = ttk.Combobox(self, width=12)
         self.cmbSmiles.place(x=85, y=100)
-        
+
         self.cmbSmiles.bind("<<ComboboxSelected>>", _changesmiles)
 
         lbllabel = Label(self, text='Label',
@@ -391,54 +389,54 @@ class SmashGui(Tk):
         ####################### Select Aim Field Module #######################
 
         ####################### Select Fragment Type #######################
-        lblFPM = Label(self, text="Select fragment type and Adjust Param",
+        lblFPM = Label(self, text="Select fragment type and adjust parameter",
                        font=self.lblFont, bg=self.bg, fg=self.fg)
         lblFPM.place(x=27, y=140)
 
         lblFP = Label(self, text='Fragment Type',
-                      font=('Times New Roman', 13),
+                      font=('Times New Roman', 12),
                       bg=self.bg)
-        lblFP.place(x=50, y=170)
+        lblFP.place(x=60, y=170)
 
         self.cmbFP = ttk.Combobox(self, width=14)
         self.cmbFP['values'] = ['Circular', 'Path', 'Function Group']
-        self.cmbFP.place(x=135, y=170)
+        self.cmbFP.place(x=165, y=170)
         self.cmbFP['state'] = "readonly"
         self.cmbFP.bind("<<ComboboxSelected>>", changestate)
         ####################### Select Fragment Type #######################
 
         ####################### Adjust Figerprint Param  Module#######################
-        lblFolded = Label(self, text='Folded', bg=self.bg,
-                          font=('Times New Roman', 13))
-        lblFolded.place(x=40, y=205)
-        self.Folded = tk.BooleanVar()
-        cmbFolded = ttk.Combobox(self, width=5, textvariable=self.Folded)
-        cmbFolded['values'] = [True, False]
-        cmbFolded.current(1)
-        cmbFolded.place(x=103, y=205)
-        cmbFolded['state'] = "readonly"
-        cmbFolded.bind("<<ComboboxSelected>>", ignorenBits)
+        # lblFolded = Label(self, text='Fold', bg=self.bg,
+        #                   font=('Times New Roman', 13))
+        # lblFolded.place(x=40, y=205)
+        # self.Folded = tk.BooleanVar()
+        # cmbFolded = ttk.Combobox(self, width=5, textvariable=self.Folded)
+        # cmbFolded['values'] = [True, False]
+        # cmbFolded.current(1)
+        # cmbFolded.place(x=103, y=205)
+        # cmbFolded['state'] = "readonly"
+        # cmbFolded.bind("<<ComboboxSelected>>", ignorenBits)
 
-        lblnBits = Label(self, text='nBits', bg=self.bg,
-                         font=('Times New Roman', 13))
-        lblnBits.place(x=180, y=205)
-        self.nBits = tk.IntVar(value=1024)
-        txtnBits = Entry(self, width=6, textvariable=self.nBits)
-        txtnBits.place(x=243, y=205)
+        # lblnBits = Label(self, text='nBits', bg=self.bg,
+        #                  font=('Times New Roman', 13))
+        # lblnBits.place(x=180, y=205)
+        # self.nBits = tk.IntVar(value=1024)
+        # txtnBits = Entry(self, width=6, textvariable=self.nBits)
+        # txtnBits.place(x=243, y=205)
 
         lblminRadius = Label(self, text='minRadius', bg=self.bg,
                              font=('Times New Roman', 13))
-        lblminRadius.place(x=40, y=240)
+        lblminRadius.place(x=40, y=220)
         self.minRadius = tk.IntVar(value=1)
         txtminRadius = Entry(self, width=5, textvariable=self.minRadius)
-        txtminRadius.place(x=120, y=240)
+        txtminRadius.place(x=120, y=220)
 
-        lblRadius = Label(self, text='Radius', bg=self.bg,
+        lblRadius = Label(self, text='maxRadius', bg=self.bg,
                           font=('Times New Roman', 13))
-        lblRadius.place(x=180, y=240)
+        lblRadius.place(x=180, y=220)
         self.Radius = tk.IntVar(value=2)
         txtRadius = Entry(self, width=5, textvariable=self.Radius)
-        txtRadius.place(x=249, y=240)
+        txtRadius.place(x=260, y=220)
 
         lblminPath = Label(self, text='minPath', bg=self.bg,
                            font=('Times New Roman', 13))
@@ -452,12 +450,12 @@ class SmashGui(Tk):
         lblmaxPath.place(x=180, y=275)
         self.maxPath = tk.IntVar(value=7)
         txtmaxPath = Entry(self, width=5, textvariable=self.maxPath)
-        txtmaxPath.place(x=250, y=275)
+        txtmaxPath.place(x=260, y=275)
 
         ####################### Adjust Figerprint Param Module#######################
 
         ####################### Adjust Running Param Module#######################
-        lblRP = Label(self, text='Adjust Running Param:',
+        lblRP = Label(self, text='Adjust running parameter:',
                       bg=self.bg, fg=self.fg, font=self.lblFont)
         lblRP.place(x=340, y=140)
 

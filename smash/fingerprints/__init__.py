@@ -21,11 +21,11 @@ import pandas as pd
 try:
     from .path import *
     from .circular import *
-    from .ifg import IdentifyFunctionalGroups
+    from .functionGroup import *
 except:
     from path import *
     from circular import *
-    from ifg import IdentifyFunctionalGroups
+    from functionGroup import *
 
 
 class Circular(object):
@@ -223,7 +223,7 @@ class Path(object):
 
 class FunctionGroup(object):
 
-    def __init__(self, mols, n_jobs=1):
+    def __init__(self, mols, nJobs=1):
         """Init
 
         Parameters
@@ -232,13 +232,13 @@ class FunctionGroup(object):
             the aim molecule library.
         """
         self.mols = mols
-        self.n_jobs = n_jobs
+        self.nJobs = nJobs
         self.fgs = None
 
     def GetFunctionGroups(self):
 
-        pool = Pool(self.n_jobs)
-        self.fgs = pool.map_async(IdentifyFunctionalGroups, self.mols).get()
+        pool = Pool(self.nJobs)
+        self.fgs = pool.map_async(GetFunctionGroupFragment, self.mols).get()
         pool.close()
         pool.join()
 
@@ -292,5 +292,5 @@ if '__main__' == __name__:
     path_matrix = path.GetPathMatrix()
     print(path_matrix.shape)
 
-    # fg = FunctionGroup(mols)
-    # print(fg.GetFunctionGroupsMatrix())
+    fg = FunctionGroup(mols)
+    print(fg.GetFunctionGroupsMatrix())

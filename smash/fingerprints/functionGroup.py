@@ -25,8 +25,12 @@ Created on 2020/07/03 21:46:19
 # Guillaume Godin 2017
 # refine output function
 # astex_ifg: identify functional groups a la Ertl, J. Cheminform (2017) 9:36
+
+
+
 from rdkit import Chem
-from collections import namedtuple
+
+__all__ = ['GetFunctionGroupFragment']
 
 def merge(mol, marked, aset):
     bset = set()
@@ -54,7 +58,7 @@ PATT_OXIRANE_ETC = Chem.MolFromSmarts('[O,N,S]1CC1')
 
 PATT_TUPLE = (PATT_DOUBLE_TRIPLE, PATT_CC_DOUBLE_TRIPLE, PATT_ACETAL, PATT_OXIRANE_ETC)
 
-def IdentifyFunctionalGroups(mol):
+def GetFunctionGroupFragment(mol):
     marked = set()
 #mark all heteroatoms in a molecule, including halogens
     for atom in mol.GetAtoms():
@@ -75,7 +79,6 @@ def IdentifyFunctionalGroups(mol):
         groups.append(grp)
 
 #extract also connected unmarked carbon atoms
-    ifg = namedtuple('IFG', ['atomIds', 'atoms', 'type'])
     ifgs = []
     for g in groups:
         uca = set()
@@ -114,6 +117,6 @@ if __name__ == "__main__":
         'CC(O)C(O)C1CNc2nc(N)nc(O)c2N1', # 19
         'NC1CCCCN(C1)c2c(Cl)cc3c(=O)c(cn(C4CC4)c3c2Cl)C(=O)O', # 20
     ]):
-        m = Chem.MolFromSmiles(smiles)
-        fgs = IdentifyFunctionalGroups(m)
+        mol = Chem.MolFromSmiles(smiles)
+        fgs = GetFunctionGroupFragment(mol)
         print(fgs)

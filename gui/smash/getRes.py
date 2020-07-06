@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import Circular, Path, FunctionGroup, Pvalue, ShowResult
+from smash import Circular, Path, FunctionGroup, Pvalue
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -110,7 +110,7 @@ def getFingerprintRes(textPad, data, **kwgrs):
                             radius=kwgrs.get('radius'),
                             minRadius=kwgrs.get('minRadius'),
                             folded=kwgrs.get('folded'),
-                            nBits=kwgrs.get('nBits'),
+                            # nBits=kwgrs.get('nBits'),
                             nJobs=n_jobs)
         subMatrix = circular.GetCircularMatrix()
 
@@ -119,12 +119,12 @@ def getFingerprintRes(textPad, data, **kwgrs):
                     minPath=kwgrs.get('minPath'),
                     maxPath=kwgrs.get('maxPath'),
                     folded=kwgrs.get('folded'),
-                    nBits=kwgrs.get('nBits'),
+                    # nBits=kwgrs.get('nBits'),
                     nJobs=n_jobs)
         subMatrix = path.GetPathMatrix()
 
     elif fingerprint == 'Function Group':
-        fg = FunctionGroup(mols, n_jobs=n_jobs)
+        fg = FunctionGroup(mols, nJobs=n_jobs)
         subMatrix = fg.GetFunctionGroupsMatrix()
         # print(subMatrix)
     add('Successed!\n\n')
