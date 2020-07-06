@@ -19,11 +19,11 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+    from .path import *
     from .circular import *
     from .ifg import IdentifyFunctionalGroups
 except:
-    from daylight import CalculateDaylight, CalculateSparseDaylight, SmashMolWithDaylight
+    from path import *
     from circular import *
     from ifg import IdentifyFunctionalGroups
 
@@ -65,7 +65,7 @@ class Circular(object):
         self.nBits = nBits if folded else None
         self.folded = folded
         self.minRadius = minRadius
-        self.n_jobs = nJobs if nJobs >= 1 else None
+        self.nJobs = nJobs if nJobs >= 1 else None
 
     def GetCicularBitInfo(self):
         """
@@ -85,7 +85,7 @@ class Circular(object):
             func = partial(GetUnfoldedCircularFragment,
                            radius=self.radius)
 
-        pool = Pool(self.n_jobs)
+        pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
         pool.close()
         pool.join()
@@ -100,13 +100,13 @@ class Circular(object):
         -------
         pandas.core.frame.DataFrame
             the fragment matrix of molecules
-            
-        """        
+
+        """
         func = partial(GetCircularFragment,
                        radius=self.radius, nBits=self.nBits,
                        folded=self.folded, minRadius=self.minRadius)
 
-        pool = Pool(self.n_jobs)
+        pool = Pool(self.nJobs)
         substructures = pool.map_async(func, self.mols).get()
         pool.close()
         pool.join()
@@ -127,12 +127,12 @@ class Circular(object):
         return matrix
 
 
-class Daylight(object):
+class Path(object):
 
     def __init__(self, mols,
                  minPath=1, maxPath=7,
-                 nBits=1024, sparse=False,
-                 n_jobs=1):
+                 nBits=1024, folded=True,
+                 nJobs=1):
         """
         Init
 
@@ -146,11 +146,11 @@ class Daylight(object):
             maximum number of bonds to include in the subgraphs. The default is 1.
         nBits : int, optional
             the number of bit of daylight. The default is 2048.
-            this param would be ignored, if the sparse set as True.
-        sparse : bool, optional
+            this param would be ignored, if the folded set as False.
+        folded : bool, optional
             which generate fragment based on sparse fingerprint. 
             The default is True.
-        n_jobs : int, optional
+        nJobs : int, optional
             The number of CPUs to use to do the computation
             The default is 1
 
@@ -162,13 +162,12 @@ class Daylight(object):
         self.mols = mols if isinstance(mols, Iterable) else (mols,)
         self.minPath = minPath
         self.maxPath = maxPath
-        self.nBits = nBits if not sparse else 'sparse'
-        self.sparse = sparse
-        self.n_jobs = n_jobs if n_jobs >= 1 else None
+        self.nBits = nBits if folded else None
+        self.folded = folded
+        self.nJobs = nJobs if nJobs >= 1 else None
 
-    def GetDaylightFingerAndBitInfo(self):
-        """
-        Calculate morgan fingerprint and return the info of NonzeroElements
+    def GetPathBitInfo(self):
+        """return the info of path bit info
 
         Returns
         -------
@@ -177,15 +176,17 @@ class Daylight(object):
             the second is bit info.
 
         """
-        if self.sparse:
-            func = partial(CalculateSparseDaylight,
-                           minPath=self.minPath, maxPath=self.maxPath)
-        else:
-            func = partial(CalculateDaylight,
-                           minPath=self.minPath, maxPath=self.maxPath,
+        if self.folded:
+            func = partial(GetFoldedPathFragment,
+                           minPath=self.minPath,
+                           maxPath=self.maxPath,
                            nBits=self.nBits)
+        else:
+            func = partial(GetUnfoldedPathFragment,
+                           minPath=self.minPath,
+                           maxPath=self.maxPath,)
 
-        pool = Pool(self.n_jobs)
+        pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
         pool.close()
         pool.join()
@@ -193,13 +194,13 @@ class Daylight(object):
         self.bitInfo = bitInfo
         return bitInfo
 
-    def GetDaylightMatrix(self):
+    def GetPathMatrix(self):
 
-        func = partial(SmashMolWithDaylight,
+        func = partial(GetPathFragment,
                        minPath=self.minPath, maxPath=self.maxPath,
-                       nBits=self.nBits, sparse=self.sparse)
+                       nBits=self.nBits, folded=self.folded)
 
-        pool = Pool(self.n_jobs)
+        pool = Pool(self.nJobs)
         substructures = pool.map_async(func, self.mols).get()
         pool.close()
         pool.join()
@@ -287,10 +288,9 @@ if '__main__' == __name__:
     circular_matrix = circular.GetCircularMatrix()
     print(circular_matrix.shape)
 
-    # daylight = Daylight(mols, sparse=True)
-    # daylight_matrix = daylight.GetDaylightMatrix()
-
-    
+    path = Path(mols, folded=False)
+    path_matrix = path.GetPathMatrix()
+    print(path_matrix.shape)
 
     # fg = FunctionGroup(mols)
     # print(fg.GetFunctionGroupsMatrix())

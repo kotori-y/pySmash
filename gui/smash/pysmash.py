@@ -322,7 +322,7 @@ class SmashGui(Tk):
                 txtminRadius['state'], txtRadius['state'] = ['normal']*2
                 txtminPath['state'], txtmaxPath['state'] = ['disable']*2
 
-            elif self.cmbFP.get() == 'Daylight':
+            elif self.cmbFP.get() == 'Path':
                 cmbFolded['state'] = 'normal'
                 ignorenBits()
                 txtminRadius['state'], txtRadius['state'] = ['disable']*2
@@ -401,7 +401,7 @@ class SmashGui(Tk):
         lblFP.place(x=50, y=170)
 
         self.cmbFP = ttk.Combobox(self, width=14)
-        self.cmbFP['values'] = ['Circular', 'Daylight', 'Function Group']
+        self.cmbFP['values'] = ['Circular', 'Path', 'Function Group']
         self.cmbFP.place(x=135, y=170)
         self.cmbFP['state'] = "readonly"
         self.cmbFP.bind("<<ComboboxSelected>>", changestate)
@@ -414,7 +414,7 @@ class SmashGui(Tk):
         self.Folded = tk.BooleanVar()
         cmbFolded = ttk.Combobox(self, width=5, textvariable=self.Folded)
         cmbFolded['values'] = [True, False]
-        cmbFolded.current(0)
+        cmbFolded.current(1)
         cmbFolded.place(x=103, y=205)
         cmbFolded['state'] = "readonly"
         cmbFolded.bind("<<ComboboxSelected>>", ignorenBits)

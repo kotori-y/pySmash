@@ -16,11 +16,12 @@ from rdkit import Chem
 from rdkit.Chem.rdmolops import RDKFingerprint
 from rdkit.Chem.rdmolops import UnfoldedRDKFingerprintCountBased
 
+__all__ = ['GetFoldedPathFragment',
+           'GetUnfoldedPathFragment',
+           'GetPathFragment']
 
-
-def CalculateDaylight(mol, minPath=1, maxPath=7, nBits=2048):
-    """
-    Calculate fingerprint and return the info of each bit
+def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048):
+    """Calculate folded path fragment.
 
     Parameters
     ----------
@@ -35,24 +36,22 @@ def CalculateDaylight(mol, minPath=1, maxPath=7, nBits=2048):
 
     Returns
     -------
-    bi : dict
+    dict
         the key of dict is the number of bit (count from 0), 
         and value is a list of list, in each list element the bond consist of 
         substrcuture
-    fp : rdkit.DataStructs.cDataStructs.ExplicitBitVect
-        fingertprint.
 
     """
     bitInfo = {}
-    fp = RDKFingerprint(mol, 
-                        minPath=minPath, 
+    fp = RDKFingerprint(mol,
+                        minPath=minPath,
                         maxPath=maxPath,
                         fpSize=nBits,
                         bitInfo=bitInfo)
     return bitInfo
 
-    
-def CalculateSparseDaylight(mol, minPath=1, maxPath=7):
+
+def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7):
     """
     Calculate fingerprint and return the info of each bit
 
@@ -67,18 +66,16 @@ def CalculateSparseDaylight(mol, minPath=1, maxPath=7):
 
     Returns
     -------
-    bi : dict
+    dict
         the key of dict is the number of bit (count from 0), 
         and value is a list of list, in each list element the bond consist of 
         substrcuture
-    fp : rdkit.DataStructs.cDataStructs.ExplicitBitVect
-        fingertprint.
 
     """
     bitInfo = {}
-    fp = UnfoldedRDKFingerprintCountBased(mol, 
-                                          minPath=minPath, 
-                                          maxPath=maxPath, 
+    fp = UnfoldedRDKFingerprintCountBased(mol,
+                                          minPath=minPath,
+                                          maxPath=maxPath,
                                           bitInfo=bitInfo)
     return bitInfo
 
@@ -92,13 +89,14 @@ def getBeginEndAtom(mol):
         head[idx] = [begin, end]
     return head
 
-def SmashMolWithDaylight(mol, 
-                         minPath=1, 
-                         maxPath=7, 
-                         nBits=2048,
-                         sparse=False):
+
+def GetPathFragment(mol,
+                    minPath=1,
+                    maxPath=7,
+                    nBits=2048,
+                    folded=True):
     """
-    
+
 
     Parameters
     ----------
@@ -113,41 +111,38 @@ def SmashMolWithDaylight(mol,
 
     Returns
     -------
-    substrcuture : dict
+    dict
         the substruct of mol and frequency.
 
     """
-    if sparse:
-        bitInfo = CalculateSparseDaylight(mol,
-                                          minPath=minPath,
-                                          maxPath=maxPath,
-                                          )
+    if folded:
+        bitInfo = GetFoldedPathFragment(mol,
+                                        minPath=minPath,
+                                        maxPath=maxPath,
+                                        nBits=nBits)
     else:
-        bitInfo = CalculateDaylight(mol, 
-                                    minPath=minPath,
-                                    maxPath=maxPath,
-                                    nBits=nBits,
-                                    )
-    
+        bitInfo = GetUnfoldedPathFragment(mol,
+                                          minPath=minPath,
+                                          maxPath=maxPath)
+
     substrcutures = []
     head = getBeginEndAtom(mol)
-    
+
     for info in bitInfo.values():
         atomsToUse = [head[bond] for bond in info[0]]
         atomsToUse = set(sum(atomsToUse, []))
         smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=info[0])
         substrcutures.append(smi)
-        
+
     substrcutures = list(set(substrcutures))
     return substrcutures
 
 
 if '__main__' == __name__:
     from rdkit import Chem
-    
+
     mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
-    substrcutures_1 = SmashMolWithDaylight(mol, sparse=False)
-    substrcutures_2 = SmashMolWithDaylight(mol, sparse=True)
-    
-    
-    
+    substrcutures_1 = GetPathFragment(mol, folded=False)
+    substrcutures_2 = GetPathFragment(mol, folded=True)
+    print(substrcutures_1)
+    print(substrcutures_2)

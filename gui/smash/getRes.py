@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import Circular, Daylight, FunctionGroup, Pvalue, ShowResult
+from smash import Circular, Path, FunctionGroup, Pvalue, ShowResult
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -114,14 +114,14 @@ def getFingerprintRes(textPad, data, **kwgrs):
                             nJobs=n_jobs)
         subMatrix = circular.GetCircularMatrix()
 
-    elif fingerprint == 'Daylight':
-        daylight = Daylight(mols,
-                            minPath=kwgrs.get('minPath'),
-                            maxPath=kwgrs.get('maxPath'),
-                            sparse=kwgrs.get('sparse'),
-                            nBits=kwgrs.get('nBits'),
-                            n_jobs=n_jobs)
-        subMatrix = daylight.GetDaylightMatrix()
+    elif fingerprint == 'Path':
+        path = Path(mols,
+                    minPath=kwgrs.get('minPath'),
+                    maxPath=kwgrs.get('maxPath'),
+                    folded=kwgrs.get('folded'),
+                    nBits=kwgrs.get('nBits'),
+                    nJobs=n_jobs)
+        subMatrix = path.GetPathMatrix()
 
     elif fingerprint == 'Function Group':
         fg = FunctionGroup(mols, n_jobs=n_jobs)
