@@ -16,11 +16,13 @@ from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprint
 
+__all__ = ['GetFoldedCircularFragment',
+           'GetUnfoldedCircularFragment',
+           'GetCircularFragment']
 
 
-def CalculateMorgan(mol, radius=2, nBits=1024):
-    """
-    Calculate morgan fingerprint and return the info of NonzeroElements
+def GetFoldedCircularFragment(mol, radius=2, nBits=1024):
+    """Get folded circular fragment under specific radius
 
     Parameters
     ----------
@@ -40,17 +42,16 @@ def CalculateMorgan(mol, radius=2, nBits=1024):
 
     """
     biInfo = {}
-    fp = GetMorganFingerprintAsBitVect(mol, 
-                                       radius=radius, 
-                                       nBits=nBits, 
+    fp = GetMorganFingerprintAsBitVect(mol,
+                                       radius=radius,
+                                       nBits=nBits,
                                        bitInfo=biInfo,
                                        )
     return biInfo
-   
 
-def CalculateSparseMorgan(mol, radius=2):
-    """
-    Calculate sparse morgan fingerprint and return the info of NonzeroElements
+
+def GetUnfoldedCircularFragment(mol, radius=2):
+    """Get unfolded circular fragment under specific radius
 
     Parameters
     ----------
@@ -68,71 +69,93 @@ def CalculateSparseMorgan(mol, radius=2):
 
     """
     bitInfo = {}
-    fp = GetMorganFingerprint(mol, 
-                              radius=radius, 
+    fp = GetMorganFingerprint(mol,
+                              radius=radius,
                               bitInfo=bitInfo,
                               )
     return bitInfo
 
 
 def includeRingMembership(s, n):
-    r=';R]'
-    d="]"
-    return r.join([d.join(s.split(d)[:n]),d.join(s.split(d)[n:])])
- 
+    r = ';R]'
+    d = "]"
+    return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
+
+
 def includeDegree(s, n, d):
-    r=';D'+str(d)+']'
-    d="]"
-    return r.join([d.join(s.split(d)[:n]),d.join(s.split(d)[n:])])
- 
+    r = ';D'+str(d)+']'
+    d = "]"
+    return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
+
+
 def writePropsToSmiles(mol, smi, order):
     #finalsmi = copy.deepcopy(smi)
     finalsmi = smi
-    for i,a in enumerate(order):
+    for i, a in enumerate(order):
         atom = mol.GetAtomWithIdx(a)
         if atom.IsInRing():
             finalsmi = includeRingMembership(finalsmi, i+1)
         finalsmi = includeDegree(finalsmi, i+1, atom.GetDegree())
     return finalsmi
- 
+
+
 def getSubstructSmi(mol, atomID, radius):
-    if radius>0:
-        env = Chem.FindAtomEnvironmentOfRadiusN(mol,radius,atomID)
-        atomsToUse=[]
+    if radius > 0:
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius, atomID)
+        atomsToUse = []
         for b in env:
             atomsToUse.append(mol.GetBondWithIdx(b).GetBeginAtomIdx())
             atomsToUse.append(mol.GetBondWithIdx(b).GetEndAtomIdx())
         atomsToUse = list(set(atomsToUse))
     else:
         atomsToUse = [atomID]
-        env=None
-    
+        env = None
+
     smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=env,
-                                   allHsExplicit=True, allBondsExplicit=True, 
+                                   allHsExplicit=True, allBondsExplicit=True,
                                    rootedAtAtom=atomID)
     order = eval(mol.GetProp("_smilesAtomOutputOrder"))
-    smi2 = writePropsToSmiles(mol,smi,order)
+    smi2 = writePropsToSmiles(mol, smi, order)
     return smi2
 
-def SmashMolWithMorgan(mol, 
-                       radius=2, 
-                       minRadius=1,
-                       nBits=1024, 
-                       sparse=False,
-                       ):
+
+def GetCircularFragment(mol,
+                        radius=2,
+                        minRadius=1,
+                        nBits=1024,
+                        folded=True,
+                        ):
+    """Get circular fragment under specific radius
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        the aim molecule.
+    radius : int, optional
+        the maximum radius of circular fragment, by default 2
+    minRadius : int, optional
+        the minimum radius of circular fragment, by default 1
+    nBits : int, optional
+        the deminision of fragment folded, by default 1024,
+        this parameter would be ignored if folded set as False
+    folded : bool, optional
+        whether hash the fragment, by default True
+
+    Returns
+    -------
+    substrcutures : list
+        circular fragment with specific radius
     """
-    
-    """
-    if sparse:
-        bitInfo = CalculateSparseMorgan(mol, 
-                                        radius=radius)
+    if folded:
+        bitInfo = GetFoldedCircularFragment(mol,
+                                            radius=radius,
+                                            nBits=nBits)
     else:
-        bitInfo = CalculateMorgan(mol, 
-                                  radius=radius, 
-                                  nBits=nBits)
-    
+        bitInfo = GetUnfoldedCircularFragment(mol,
+                                              radius=radius)
+
     substrcutures = []
-    
+
     for info in bitInfo.values():
         a, r = info[0]
 
@@ -141,15 +164,13 @@ def SmashMolWithMorgan(mol,
             substrcutures.append(smi2)
         else:
             pass
-    
+
     substrcutures = list(set(substrcutures))
     return substrcutures
 
 
-
-
-
 if '__main__' == __name__:
     mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
-    substrcutures = SmashMolWithMorgan(mol, radius=3, minRadius=2, sparse=True)
-    print(substrcutures)
+    substrcutures = GetCircularFragment(
+        mol, radius=2, minRadius=1, folded=True)
+    print(len(substrcutures))

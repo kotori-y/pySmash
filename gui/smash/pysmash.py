@@ -221,7 +221,7 @@ class SmashGui(Tk):
                     'minPath': self.minPath.get(),
                     'maxPath': self.maxPath.get(),
                     'nBits': self.nBits.get(),
-                    'sparse': self.Sparse.get(),
+                    'folded': self.Folded.get(),
                     'minRatio': self.minRatio.get(),
                     'minNum': self.minNum.get(),
                     'aimLabel': self.cmbAim.get(),
@@ -299,13 +299,13 @@ class SmashGui(Tk):
             self.cmbAim.current(1)
 
         def ignorenBits(*args):
-            if self.Sparse.get():
-                txtnBits['state'] = 'disable'
-            else:
+            if self.Folded.get():
                 txtnBits['state'] = 'normal'
+            else:
+                txtnBits['state'] = 'disable'
 
         def disable(*args):
-            cmbSparse['state'], txtnBits['state'], txtminRadius['state'],\
+            cmbFolded['state'], txtnBits['state'], txtminRadius['state'],\
                 txtRadius['state'], txtminPath['state'], txtmaxPath['state'],\
                 txtminNum['state'], txtminRatio['state'], txtPvalue['state'],\
                 txtnjobs['state'], btnRun['state'] = ['disable']*11
@@ -316,20 +316,20 @@ class SmashGui(Tk):
         def changestate(*args):
             txtminNum['state'], txtminRatio['state'], txtPvalue['state'],\
                 txtnjobs['state'], btnRun['state'] = ['normal']*5
-            if self.cmbFP.get() == 'ECFP':
-                cmbSparse['state'] = 'normal'
+            if self.cmbFP.get() == 'Circular':
+                cmbFolded['state'] = 'readonly'
                 ignorenBits()
                 txtminRadius['state'], txtRadius['state'] = ['normal']*2
                 txtminPath['state'], txtmaxPath['state'] = ['disable']*2
 
             elif self.cmbFP.get() == 'Daylight':
-                cmbSparse['state'] = 'normal'
+                cmbFolded['state'] = 'normal'
                 ignorenBits()
                 txtminRadius['state'], txtRadius['state'] = ['disable']*2
                 txtminPath['state'], txtmaxPath['state'] = ['normal']*2
 
             elif self.cmbFP.get() == 'Function Group':
-                cmbSparse['state'], txtnBits['state'], txtminRadius['state'], \
+                cmbFolded['state'], txtnBits['state'], txtminRadius['state'], \
                     txtRadius['state'], txtminPath['state'], txtmaxPath['state'] = ['disable']*6
         # global image
         # image = tk.PhotoImage(file='logo.gif')
@@ -390,34 +390,34 @@ class SmashGui(Tk):
         self.cmbAim.place(x=468, y=100)
         ####################### Select Aim Field Module #######################
 
-        ####################### Select Fingerprint Module #######################
-        lblFPM = Label(self, text="Select Fingerprint and Adjust Param",
+        ####################### Select Fragment Type #######################
+        lblFPM = Label(self, text="Select fragment type and Adjust Param",
                        font=self.lblFont, bg=self.bg, fg=self.fg)
         lblFPM.place(x=27, y=140)
 
-        lblFP = Label(self, text='Fingerprint',
+        lblFP = Label(self, text='Fragment Type',
                       font=('Times New Roman', 13),
                       bg=self.bg)
         lblFP.place(x=50, y=170)
 
         self.cmbFP = ttk.Combobox(self, width=14)
-        self.cmbFP['values'] = ['ECFP', 'Daylight', 'Function Group']
+        self.cmbFP['values'] = ['Circular', 'Daylight', 'Function Group']
         self.cmbFP.place(x=135, y=170)
         self.cmbFP['state'] = "readonly"
         self.cmbFP.bind("<<ComboboxSelected>>", changestate)
-        ####################### Select Fingerprint Module #######################
+        ####################### Select Fragment Type #######################
 
         ####################### Adjust Figerprint Param  Module#######################
-        lblSparse = Label(self, text='Sparse', bg=self.bg,
+        lblFolded = Label(self, text='Folded', bg=self.bg,
                           font=('Times New Roman', 13))
-        lblSparse.place(x=40, y=205)
-        self.Sparse = tk.BooleanVar()
-        cmbSparse = ttk.Combobox(self, width=5, textvariable=self.Sparse)
-        cmbSparse['values'] = [True, False]
-        cmbSparse.current(0)
-        cmbSparse.place(x=103, y=205)
-        cmbSparse['state'] = "readonly"
-        cmbSparse.bind("<<ComboboxSelected>>", ignorenBits)
+        lblFolded.place(x=40, y=205)
+        self.Folded = tk.BooleanVar()
+        cmbFolded = ttk.Combobox(self, width=5, textvariable=self.Folded)
+        cmbFolded['values'] = [True, False]
+        cmbFolded.current(0)
+        cmbFolded.place(x=103, y=205)
+        cmbFolded['state'] = "readonly"
+        cmbFolded.bind("<<ComboboxSelected>>", ignorenBits)
 
         lblnBits = Label(self, text='nBits', bg=self.bg,
                          font=('Times New Roman', 13))

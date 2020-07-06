@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import Morgan, Daylight, FunctionGroup, Pvalue, ShowResult
+from smash import Circular, Daylight, FunctionGroup, Pvalue, ShowResult
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -46,7 +46,8 @@ def loadmols(smi):
     if not mol:
         mol = Chem.MolFromSmiles(obsmitosmile(smi))
         if not mol:
-            now = time.strftime('%H:%M:%S %d-%m-%y', time.localtime(time.time()))
+            now = time.strftime('%H:%M:%S %d-%m-%y',
+                                time.localtime(time.time()))
             with open('./error.log', 'a') as f_obj:
                 f_obj.write('{} {}\n'.format(now, smi))
             f_obj.close()
@@ -104,14 +105,14 @@ def getFingerprintRes(textPad, data, **kwgrs):
 
     ############# Obtain Fingerprint Matrix #############
     add('Obtain Fingerprint Matrix... ')
-    if fingerprint == 'ECFP':
-        morgan = Morgan(mols,
-                        radius=kwgrs.get('radius'),
-                        minRadius=kwgrs.get('minRadius'),
-                        sparse=kwgrs.get('sparse'),
-                        nBits=kwgrs.get('nBits'),
-                        n_jobs=n_jobs)
-        subMatrix = morgan.GetMorganMatrix()
+    if fingerprint == 'Circular':
+        circular = Circular(mols,
+                            radius=kwgrs.get('radius'),
+                            minRadius=kwgrs.get('minRadius'),
+                            folded=kwgrs.get('folded'),
+                            nBits=kwgrs.get('nBits'),
+                            nJobs=n_jobs)
+        subMatrix = circular.GetCircularMatrix()
 
     elif fingerprint == 'Daylight':
         daylight = Daylight(mols,
