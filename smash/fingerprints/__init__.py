@@ -31,9 +31,9 @@ except:
 class Circular(object):
 
     def __init__(self, mols,
-                 radius=2, nBits=1024,
-                 folded=True, minRadius=1,
-                 nJobs=1):
+                 maxRadius=2, minRadius=1,
+                 nBits=1024, folded=True, 
+                 maxFragment=False, nJobs=1):
         """
         Init
 
@@ -41,7 +41,7 @@ class Circular(object):
         ----------
         mols : a list of rdkit.Chem.rdchem.Mol
             the aim molecule library.
-        radius : int, optional
+        maxRadius : int, optional
             the radius of circular fingerprints. The default is 2
         nBits : int, optional
             the number of bit of morgan. The default is 1024
@@ -51,6 +51,8 @@ class Circular(object):
             The default is True.
         minRadius : int, optional
             minimum radius of environment. The default is 1
+        maxFragment : bool, optional
+            whether only return the max fragment of each atom, by default False
         nJobs : int, optional
             The number of CPUs to use to do the computation
             The default is 1
@@ -61,10 +63,11 @@ class Circular(object):
 
         """
         self.mols = mols if isinstance(mols, Iterable) else (mols,)
-        self.radius = radius
         self.nBits = nBits if folded else None
         self.folded = folded
+        self.maxRadius = maxRadius
         self.minRadius = minRadius
+        self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
 
     def GetCicularBitInfo(self):
@@ -79,11 +82,11 @@ class Circular(object):
         """
         if self.folded:
             func = partial(GetFoldedCircularFragment,
-                           radius=self.radius,
+                           maxRadius=self.maxRadius,
                            nBits=self.nBits)
         else:
             func = partial(GetUnfoldedCircularFragment,
-                           radius=self.radius)
+                           maxRadius=self.maxRadius)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
@@ -103,8 +106,9 @@ class Circular(object):
 
         """
         func = partial(GetCircularFragment,
-                       radius=self.radius, nBits=self.nBits,
-                       folded=self.folded, minRadius=self.minRadius)
+                       maxRadius=self.maxRadius, minRadius=self.minRadius,
+                       nBits=self.nBits, folded=self.folded, 
+                       maxFragment=self.maxFragment)
 
         pool = Pool(self.nJobs)
         substructures = pool.map_async(func, self.mols).get()
@@ -284,13 +288,13 @@ if '__main__' == __name__:
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    circular = Circular(mols, folded=False, radius=4, minRadius=1, nBits=1024)
+    circular = Circular(mols, folded=False, maxRadius=3, minRadius=1, maxFragment=False)
     circular_matrix = circular.GetCircularMatrix()
     print(circular_matrix.shape)
 
-    path = Path(mols, folded=False)
-    path_matrix = path.GetPathMatrix()
-    print(path_matrix.shape)
+    # path = Path(mols, folded=False)
+    # path_matrix = path.GetPathMatrix()
+    # print(path_matrix.shape)
 
-    fg = FunctionGroup(mols)
-    print(fg.GetFunctionGroupsMatrix())
+    # fg = FunctionGroup(mols)
+    # print(fg.GetFunctionGroupsMatrix())
