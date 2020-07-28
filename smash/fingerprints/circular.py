@@ -22,7 +22,7 @@ __all__ = ['GetFoldedCircularFragment',
            'GetCircularFragment']
 
 
-def _DisposeCircularBitInfo(bitInfo, maxFragment=False):
+def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=False):
     """dispose the bitinfo retrived from
     GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
 
@@ -40,20 +40,33 @@ def _DisposeCircularBitInfo(bitInfo, maxFragment=False):
     dict
         disposed bitinfo
     """
+    idxAll = list(bitInfo.keys())
+
     if maxFragment:
         bitInfo = [[atom[0], atom[1], idx]
                    for idx, atomInfo in bitInfo.items() for atom in atomInfo]
         bitInfo = pd.DataFrame(bitInfo).groupby(0).max().drop_duplicates(2)
-        bitInfo = dict(zip(bitInfo[2], tuple(zip(bitInfo.index, bitInfo[1]))))
+        idxFrag = bitInfo[2].tolist()
+        bitInfo = tuple(zip(bitInfo.index, bitInfo[1]))
 
     else:
-        bitInfo = dict(zip(bitInfo.keys(), map(
-            lambda x: x[0], bitInfo.values())))
+        idxFrag = idxAll
+        bitInfo = tuple(map(lambda x: x[0], bitInfo.values()))
 
-    return bitInfo
+    fragments = {}
+    for info, idx in zip(bitInfo, idxFrag):
+        a, r = info
+
+        if r >= minRadius:
+            smi2 = getSubstructSmi(mol, a, r)
+            fragments[idx] = smi2
+        else:
+            pass
+
+    return (idxAll, fragments)
 
 
-def GetFoldedCircularFragment(mol, maxRadius=2, nBits=1024, maxFragment=False):
+def GetFoldedCircularFragment(mol, minRadius=3, maxRadius=6, nBits=1024, maxFragment=False):
     """Get folded circular fragment under specific radius
 
     Parameters
@@ -81,11 +94,11 @@ def GetFoldedCircularFragment(mol, maxRadius=2, nBits=1024, maxFragment=False):
                                        nBits=nBits,
                                        bitInfo=bitInfo)
 
-    bitInfo = _DisposeCircularBitInfo(bitInfo, maxFragment)
+    bitInfo = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment)
     return bitInfo
 
 
-def GetUnfoldedCircularFragment(mol, maxRadius=2, maxFragment=False):
+def GetUnfoldedCircularFragment(mol, minRadius=3, maxRadius=6, maxFragment=False):
     """Get unfolded circular fragment under specific radius
 
     Parameters
@@ -110,7 +123,7 @@ def GetUnfoldedCircularFragment(mol, maxRadius=2, maxFragment=False):
                               radius=maxRadius,
                               bitInfo=bitInfo)
 
-    bitInfo = _DisposeCircularBitInfo(bitInfo, maxFragment)
+    bitInfo = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment)
     return bitInfo
 
 
@@ -158,8 +171,8 @@ def getSubstructSmi(mol, atomID, radius):
 
 
 def GetCircularFragment(mol,
-                        maxRadius=2,
-                        minRadius=1,
+                        maxRadius=6,
+                        minRadius=3,
                         nBits=1024,
                         folded=True,
                         maxFragment=False):
@@ -188,32 +201,39 @@ def GetCircularFragment(mol,
     """
     if folded:
         bitInfo = GetFoldedCircularFragment(mol,
+                                            minRadius=minRadius,
                                             maxRadius=maxRadius,
                                             nBits=nBits,
                                             maxFragment=maxFragment)
     else:
         bitInfo = GetUnfoldedCircularFragment(mol,
+                                              minRadius=minRadius,
                                               maxRadius=maxRadius,
                                               maxFragment=maxFragment)
 
-    substrcutures = []
+    # substrcutures = []
 
-    for info in bitInfo.values():
-        a, r = info
+    # for info in bitInfo[1]:
+    #     a, r = info
 
-        if r >= minRadius:
-            smi2 = getSubstructSmi(mol, a, r)
-            substrcutures.append(smi2)
-        else:
-            pass
+    #     if r >= minRadius:
+    #         smi2 = getSubstructSmi(mol, a, r)
+    #         substrcutures.append(smi2)
+    #     else:
+    #         pass
 
-    substrcutures = list(set(substrcutures))
-    return substrcutures
+    # substrcutures = list(set(substrcutures))
+    return bitInfo
 
 
 if '__main__' == __name__:
-    mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
+    mol = Chem.MolFromSmiles('C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1')
 
-    fragments = GetCircularFragment(
-        mol, maxRadius=2, folded=False, maxFragment=True)
-    print(fragments)
+    bitInfo = GetUnfoldedCircularFragment(
+        mol, maxRadius=3, minRadius=1, maxFragment=False)
+    print(bitInfo[1].keys())
+
+    # fragments = GetCircularFragment(mol,
+    #                                 folded=False, minRadius=3,
+    #                                 maxRadius=6, maxFragment=True)
+    # print(fragments)

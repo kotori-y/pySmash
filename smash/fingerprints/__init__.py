@@ -12,9 +12,11 @@ Created on Sun Jun 14 15:12:50 2020
 """
 
 
+from collections import ChainMap
 from functools import partial
 from collections.abc import Iterable
 from multiprocessing import Pool
+from multiprocessing import freeze_support
 import numpy as np
 import pandas as pd
 
@@ -32,7 +34,7 @@ class Circular(object):
 
     def __init__(self, mols,
                  maxRadius=2, minRadius=1,
-                 nBits=1024, folded=True, 
+                 nBits=1024, folded=True,
                  maxFragment=False, nJobs=1):
         """
         Init
@@ -62,7 +64,7 @@ class Circular(object):
         None.
 
         """
-        self.mols = mols if isinstance(mols, Iterable) else (mols,)
+        self.mols = mols if isinstance(mols, Iterable) else (mols, )
         self.nBits = nBits if folded else None
         self.folded = folded
         self.maxRadius = maxRadius
@@ -70,7 +72,7 @@ class Circular(object):
         self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
 
-    def GetCicularBitInfo(self):
+    def GetCircularFragmentLib(self):
         """
         Calculate morgan fingerprint and return the info of NonzeroElements
 
@@ -80,13 +82,12 @@ class Circular(object):
             fragment bit info.
 
         """
-        if self.folded:
-            func = partial(GetFoldedCircularFragment,
-                           maxRadius=self.maxRadius,
-                           nBits=self.nBits)
-        else:
-            func = partial(GetUnfoldedCircularFragment,
-                           maxRadius=self.maxRadius)
+        func = partial(GetCircularFragment,
+                       minRadius=self.minRadius,
+                       maxRadius=self.maxRadius,
+                       nBits=self.nBits,
+                       folded=self.folded,
+                       maxFragment=self.maxFragment)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
@@ -105,28 +106,24 @@ class Circular(object):
             the fragment matrix of molecules
 
         """
-        func = partial(GetCircularFragment,
-                       maxRadius=self.maxRadius, minRadius=self.minRadius,
-                       nBits=self.nBits, folded=self.folded, 
-                       maxFragment=self.maxFragment)
+        bitInfo = self.GetCircularFragmentLib()
+        # pool.close()
+        # pool.join()
 
-        pool = Pool(self.nJobs)
-        substructures = pool.map_async(func, self.mols).get()
-        pool.close()
-        pool.join()
-
-        unique = [x for substructure in substructures for x in substructure]
+        unique = [bit for info in bitInfo for bit in info[1]]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-
         matrix = np.zeros((len(self.mols), num), dtype=np.int8)
-        for idx, arr in enumerate(matrix):
-            substructure = substructures[idx]
-            for item in substructure:
-                arr[dic[item]] = 1
 
+        for idx, arr in enumerate(matrix):
+            info = bitInfo[idx]
+            for frag in unique:
+                if frag in info[0]:
+                    arr[dic[frag]] = 1
+
+        # colDict = ChainMap(*[info[1] for info in bitInfo])
         matrix = pd.DataFrame(matrix, columns=unique)
         return matrix
 
@@ -260,8 +257,8 @@ class FunctionGroup(object):
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-
         matrix = np.zeros((len(self.mols), num), dtype=np.int8)
+
         for idx, arr in enumerate(matrix):
             fg = fgs[idx]
             for item in fg:
@@ -272,6 +269,7 @@ class FunctionGroup(object):
 
 
 if '__main__' == __name__:
+    freeze_support()
     from rdkit import Chem
 
     smis = [
@@ -284,13 +282,20 @@ if '__main__' == __name__:
         'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
         'C1=C2N=CC=NC2=C2N=CNC2=C1',
         'C1=C(O)C=CC(O)=C1',
+        'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
+        'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
+        'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C'
+
     ]
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    circular = Circular(mols, folded=False, maxRadius=3, minRadius=1, maxFragment=False)
+    circular = Circular(mols, folded=False, maxRadius=3,
+                        minRadius=1, maxFragment=False)
     circular_matrix = circular.GetCircularMatrix()
-    print(circular_matrix.shape)
+    print(circular_matrix)
+    # circular_matrix.insert(0, 'SMILES', smis)
+    # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
     # path = Path(mols, folded=False)
     # path_matrix = path.GetPathMatrix()
