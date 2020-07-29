@@ -159,14 +159,6 @@ class MeaningfulCircular(Circular):
                           nBits, folded,
                           maxFragment, nJobs)
 
-    def Pvalue(self, n, m, val, aimLabel):
-        """
-        """
-        ns = val.sum()
-        ms = (val[labels] == aimLabel).sum()
-        pvalue = sum(Pvalue(n, m, ns, ms))
-        return pvalue
-
     def GetMeaningfulCircularMatrix(self, labels, aimLabel=1,
                                     minNum=5, pThreshold=0.05, accuracy=0.70):
         """
@@ -188,7 +180,7 @@ class MeaningfulCircular(Circular):
             pvalue = sum(Pvalue(n, m, ns, ms))
             if pvalue <= pThreshold:
                 meanPvalue[col] = pvalue
-        
+
         meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
@@ -197,7 +189,7 @@ class MeaningfulCircular(Circular):
         meanPvalue['Coverage'] = meanPvalue['Hitted']/m
 
         if accuracy is not None:
-            meanPvalue = meanPvalue[meanPvalue.Accuracy>=accuracy]
+            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
@@ -215,54 +207,74 @@ class MeaningfulCircular(Circular):
         # pool.close()
         # pool.join()
         # return res
+
+
+class MeaningfulPath(Path):
+
+    def __init__(self, mols,
+                 minPath=1, maxPath=7,
+                 nBits=1024, folded=False, nJobs=1):
+        """
+        """
+        Path.__init__(self, mols,
+                      minPath, maxPath,
+                      nBits, folded, nJobs)
+
+    def GetMeaningfulPathMatrix(self, labels, aimLabel=1,
+                                minNum=5, pThreshold=0.05, accuracy=0.70):
+        """
+        """
+        matrix = self.GetPathMatrix()
+
+        bo = (matrix.sum(axis=0) >= minNum).values
+        matrix = matrix.loc[:, bo]
+
+        n = len(labels)
+        m = (labels == aimLabel).sum()
+
+        meanPvalue = {}
+        for col, val in matrix.iteritems():
+
+            ns = val.sum()
+            ms = (val[labels == aimLabel] == 1).sum()
+
+            pvalue = sum(Pvalue(n, m, ns, ms))
+            if pvalue <= pThreshold:
+                meanPvalue[col] = pvalue
+
+        meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
+        meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+        meanPvalue['Total'] = meanMatrix.sum(axis=0)
+        meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
+        meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
+        meanPvalue['Coverage'] = meanPvalue['Hitted']/m
+
+        if accuracy is not None:
+            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
+            meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
+        else:
+            pass
+        return meanPvalue, meanMatrix
+
+
 if '__main__' == __name__:
     from rdkit import Chem
-    import openbabel as ob
     from itertools import compress
-
-    def obsmitosmile(smiles):
-        conv = ob.OBConversion()
-        conv.SetInAndOutFormats("smi", "can")
-        conv.SetOptions("K", conv.OUTOPTIONS)
-        mol = ob.OBMol()
-        conv.ReadString(mol, smiles)
-        smile = conv.WriteString(mol)
-        smile = smile.replace('\t\n', '')
-        return smile
-
-    def getMol(smiles):
-        mol = Chem.MolFromSmiles(smiles)
-        if not mol:
-            mol = Chem.MolFromSmiles(obsmitosmile(smiles)) 
-        return mol
-
-    # smis = [
-    #     'C1=CC=CC(C(Br)C)=C1',
-    #     'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
-    #     'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
-    #     'C1=NC(CCN)=CN1',
-    #     'C1CCCC(CCO)C1',
-    #     'C1=CC=C2N=C(O)C=CC2=C1',
-    #     'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
-    #     'C1=C2N=CC=NC2=C2N=CNC2=C1',
-    #     'C1=C(O)C=CC(O)=C1',
-    #     'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
-    #     'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
-    #     'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C']
-
-
 
     data = pd.read_csv(r'tests\Canc\Canc.txt', sep='\t')
     # data = data.sample(n=100)
 
-    mols = data.SMILES.map(getMol)
+    mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     bo = mols.notna().values
-    
+
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
-    circular = MeaningfulCircular(mols, folded=False, maxRadius=6,
-                                  minRadius=3, maxFragment=True, nJobs=4)
-    meanPvalue, meanMatrix = circular.GetMeaningfulCircularMatrix(y_true)
-    print(meanMatrix)
+    # circular = MeaningfulCircular(mols, folded=False, maxRadius=6,
+    #                               minRadius=3, maxFragment=True, nJobs=4)
+    # meanPvalue, meanMatrix = circular.GetMeaningfulCircularMatrix(y_true)
 
+    path = MeaningfulPath(mols, minPath=1,
+                          maxPath=7, nJobs=4)
+    meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
+    print(meanMatrix)

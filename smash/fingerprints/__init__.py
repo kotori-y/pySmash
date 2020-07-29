@@ -132,7 +132,7 @@ class Path(object):
 
     def __init__(self, mols,
                  minPath=1, maxPath=7,
-                 nBits=1024, folded=True,
+                 nBits=1024, folded=False,
                  nJobs=1):
         """
         Init
@@ -167,7 +167,7 @@ class Path(object):
         self.folded = folded
         self.nJobs = nJobs if nJobs >= 1 else None
 
-    def GetPathBitInfo(self):
+    def GetPathFragmentLib(self):
         """return the info of path bit info
 
         Returns
@@ -197,16 +197,10 @@ class Path(object):
 
     def GetPathMatrix(self):
 
-        func = partial(GetPathFragment,
-                       minPath=self.minPath, maxPath=self.maxPath,
-                       nBits=self.nBits, folded=self.folded)
+        fragments = self.GetPathFragmentLib()
+        fragments = [list(fragment.keys()) for fragment in fragments]
 
-        pool = Pool(self.nJobs)
-        substructures = pool.map_async(func, self.mols).get()
-        pool.close()
-        pool.join()
-
-        unique = [x for substructure in substructures for x in substructure]
+        unique = [x for fragment in fragments for x in fragment]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
@@ -214,8 +208,8 @@ class Path(object):
 
         matrix = np.zeros((len(self.mols), num), dtype=np.int8)
         for idx, arr in enumerate(matrix):
-            substructure = substructures[idx]
-            for item in substructure:
+            fragment = fragments[idx]
+            for item in fragment:
                 arr[dic[item]] = 1
 
         matrix = pd.DataFrame(matrix, columns=unique)
@@ -290,16 +284,18 @@ if '__main__' == __name__:
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    circular = Circular(mols, folded=False, maxRadius=3,
-                        minRadius=1, maxFragment=False)
-    circular_matrix = circular.GetCircularMatrix()
-    print(circular_matrix)
+    # circular = Circular(mols, folded=False, maxRadius=3,
+    #                     minRadius=1, maxFragment=False)
+    # circular_matrix = circular.GetCircularMatrix()
+    # print(circular_matrix)
     # circular_matrix.insert(0, 'SMILES', smis)
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
-    # path = Path(mols, folded=False)
-    # path_matrix = path.GetPathMatrix()
-    # print(path_matrix.shape)
+    path = Path(mols, folded=False)
+    # path_frag = path.GetPathFragmentLib()
+    # print(path_frag[0])
+    path_matrix = path.GetPathMatrix()
+    print(path_matrix.shape)
 
     # fg = FunctionGroup(mols)
     # print(fg.GetFunctionGroupsMatrix())

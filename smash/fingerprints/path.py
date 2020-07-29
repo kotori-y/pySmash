@@ -94,7 +94,7 @@ def GetPathFragment(mol,
                     minPath=1,
                     maxPath=7,
                     nBits=2048,
-                    folded=True):
+                    folded=False):
     """
 
 
@@ -125,24 +125,22 @@ def GetPathFragment(mol,
                                           minPath=minPath,
                                           maxPath=maxPath)
 
-    substrcutures = []
-    head = getBeginEndAtom(mol)
+    # substrcutures = []
+    # head = getBeginEndAtom(mol)
 
-    for info in bitInfo.values():
-        atomsToUse = [head[bond] for bond in info[0]]
-        atomsToUse = set(sum(atomsToUse, []))
-        smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=info[0])
-        substrcutures.append(smi)
+    # for info in bitInfo.values():
+    #     atomsToUse = [head[bond] for bond in info[0]]
+    #     atomsToUse = set(sum(atomsToUse, []))
+    #     smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=info[0])
+    #     substrcutures.append(smi)
 
-    substrcutures = list(set(substrcutures))
-    return substrcutures
-
+    # substrcutures = list(set(substrcutures))
+    # return substrcutures
+    return bitInfo
 
 if '__main__' == __name__:
     from rdkit import Chem
 
     mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
-    substrcutures_1 = GetPathFragment(mol, folded=False)
-    substrcutures_2 = GetPathFragment(mol, folded=True)
-    print(substrcutures_1)
-    print(substrcutures_2)
+    frag = GetPathFragment(mol)
+    print(frag)
