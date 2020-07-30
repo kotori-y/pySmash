@@ -151,7 +151,8 @@ class MeaningfulCircular(Circular):
     def __init__(self, mols,
                  maxRadius=2, minRadius=1,
                  nBits=1024, folded=False,
-                 maxFragment=True, nJobs=1):
+                 maxFragment=True, nJobs=1,
+                 ):
         """
         """
         Circular.__init__(self, mols,
@@ -160,7 +161,8 @@ class MeaningfulCircular(Circular):
                           maxFragment, nJobs)
 
     def GetMeaningfulCircularMatrix(self, labels, aimLabel=1,
-                                    minNum=5, pThreshold=0.05, accuracy=0.70):
+                                    minNum=5, pThreshold=0.05, 
+                                    accuracy=0.70, Bonferroni=True):
         """
         """
         matrix = self.GetCircularMatrix()
@@ -181,8 +183,15 @@ class MeaningfulCircular(Circular):
             if pvalue <= pThreshold:
                 meanPvalue[col] = pvalue
 
-        meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+        
+        if Bonferroni:
+            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
+            meanPvalue = meanPvalue[meanPvalue.Pvalue<=pThreshold]
+        else:
+            pass
+
+        meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
         meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
         meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
@@ -244,6 +253,7 @@ class MeaningfulPath(Path):
 
         meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
         meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
         meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
