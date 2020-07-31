@@ -133,7 +133,7 @@ class Path(object):
     def __init__(self, mols,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
-                 nJobs=1):
+                 nJobs=1, maxFragment=True):
         """
         Init
 
@@ -166,6 +166,7 @@ class Path(object):
         self.nBits = nBits if folded else None
         self.folded = folded
         self.nJobs = nJobs if nJobs >= 1 else None
+        self.maxFragment = maxFragment
 
     def GetPathFragmentLib(self):
         """return the info of path bit info
@@ -181,11 +182,13 @@ class Path(object):
             func = partial(GetFoldedPathFragment,
                            minPath=self.minPath,
                            maxPath=self.maxPath,
-                           nBits=self.nBits)
+                           nBits=self.nBits,
+                           maxFragment=self.maxFragment)
         else:
             func = partial(GetUnfoldedPathFragment,
                            minPath=self.minPath,
-                           maxPath=self.maxPath,)
+                           maxPath=self.maxPath,
+                           maxFragment=self.maxFragment)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
@@ -197,21 +200,24 @@ class Path(object):
 
     def GetPathMatrix(self):
 
-        fragments = self.GetPathFragmentLib()
-        fragments = [list(fragment.keys()) for fragment in fragments]
+        bitInfo = self.GetPathFragmentLib()
+        # pool.close()
+        # pool.join()
 
-        unique = [x for fragment in fragments for x in fragment]
+        unique = [bit for info in bitInfo for bit in info[1]]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-
         matrix = np.zeros((len(self.mols), num), dtype=np.int8)
-        for idx, arr in enumerate(matrix):
-            fragment = fragments[idx]
-            for item in fragment:
-                arr[dic[item]] = 1
 
+        for idx, arr in enumerate(matrix):
+            info = bitInfo[idx]
+            for frag in unique:
+                if frag in info[0]:
+                    arr[dic[frag]] = 1
+
+        # colDict = ChainMap(*[info[1] for info in bitInfo])
         matrix = pd.DataFrame(matrix, columns=unique)
         return matrix
 
@@ -291,7 +297,7 @@ if '__main__' == __name__:
     # circular_matrix.insert(0, 'SMILES', smis)
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
-    path = Path(mols, folded=False)
+    path = Path(mols, folded=False, maxFragment=True)
     # path_frag = path.GetPathFragmentLib()
     # print(path_frag[0])
     path_matrix = path.GetPathMatrix()

@@ -20,7 +20,35 @@ __all__ = ['GetFoldedPathFragment',
            'GetUnfoldedPathFragment',
            'GetPathFragment']
 
-def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048):
+
+def _DisposePathFragments(fragments, maxFragment=True):
+
+    def func(frags):              
+        sets={frozenset(e) for e in frags}  
+        us=[]
+        for e in sets:
+            if any(e < s for s in sets):
+                continue
+            else:
+                us.append(list(e))   
+        return us
+    
+    keys = list(fragments.keys())
+    if maxFragment:
+        dic = dic = {str(set(x)):k for k,v in fragments.items() for x in v}
+        fragments = [i for j in fragments.values() for i in j]
+        fragments = func(fragments)
+        fragments = {dic[str(set(k))]:k for k in fragments}
+    else:
+        pass
+    
+    return (keys, fragments)
+
+
+
+
+
+def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048, maxFragment=True):
     """Calculate folded path fragment.
 
     Parameters
@@ -48,10 +76,12 @@ def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048):
                         maxPath=maxPath,
                         fpSize=nBits,
                         bitInfo=bitInfo)
-    return bitInfo
+    
+    fragments = _DisposePathFragments(bitInfo, maxFragment=maxFragment)                  
+    return fragments
 
 
-def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7):
+def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7, maxFragment=True):
     """
     Calculate fingerprint and return the info of each bit
 
@@ -77,7 +107,9 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7):
                                           minPath=minPath,
                                           maxPath=maxPath,
                                           bitInfo=bitInfo)
-    return bitInfo
+
+    fragments = _DisposePathFragments(bitInfo, maxFragment=maxFragment)                  
+    return fragments
 
 
 def getBeginEndAtom(mol):
@@ -94,7 +126,8 @@ def GetPathFragment(mol,
                     minPath=1,
                     maxPath=7,
                     nBits=2048,
-                    folded=False):
+                    folded=False,
+                    maxFragment=True):
     """
 
 
@@ -119,11 +152,13 @@ def GetPathFragment(mol,
         bitInfo = GetFoldedPathFragment(mol,
                                         minPath=minPath,
                                         maxPath=maxPath,
-                                        nBits=nBits)
+                                        nBits=nBits,
+                                        maxFragment=maxFragment)
     else:
         bitInfo = GetUnfoldedPathFragment(mol,
                                           minPath=minPath,
-                                          maxPath=maxPath)
+                                          maxPath=maxPath,
+                                          maxFragment=maxFragment)
 
     # substrcutures = []
     # head = getBeginEndAtom(mol)
@@ -142,5 +177,5 @@ if '__main__' == __name__:
     from rdkit import Chem
 
     mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
-    frag = GetPathFragment(mol)
+    frag = GetPathFragment(mol, maxFragment=True)
     print(frag)

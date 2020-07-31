@@ -222,15 +222,18 @@ class MeaningfulPath(Path):
 
     def __init__(self, mols,
                  minPath=1, maxPath=7,
-                 nBits=1024, folded=False, nJobs=1):
+                 nBits=1024, folded=False, 
+                 nJobs=1, maxFragment=True):
         """
         """
         Path.__init__(self, mols,
                       minPath, maxPath,
-                      nBits, folded, nJobs)
+                      nBits, folded, nJobs,
+                      maxFragment)
 
     def GetMeaningfulPathMatrix(self, labels, aimLabel=1,
-                                minNum=5, pThreshold=0.05, accuracy=0.70):
+                                minNum=5, pThreshold=0.05, 
+                                accuracy=0.70):
         """
         """
         matrix = self.GetPathMatrix()
