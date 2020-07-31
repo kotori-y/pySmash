@@ -178,17 +178,12 @@ class Path(object):
             the second is bit info.
 
         """
-        if self.folded:
-            func = partial(GetFoldedPathFragment,
-                           minPath=self.minPath,
-                           maxPath=self.maxPath,
-                           nBits=self.nBits,
-                           maxFragment=self.maxFragment)
-        else:
-            func = partial(GetUnfoldedPathFragment,
-                           minPath=self.minPath,
-                           maxPath=self.maxPath,
-                           maxFragment=self.maxFragment)
+        func = partial(GetPathFragment,
+                       minPath=self.minPath,
+                       maxPath=self.maxPath,
+                       nBits=self.nBits,
+                       folded=self.folded,
+                       maxFragment=self.maxFragment)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, self.mols).get()
@@ -284,9 +279,8 @@ if '__main__' == __name__:
         'C1=C(O)C=CC(O)=C1',
         'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
         'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
-        'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C'
-
-    ]
+        'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
+        ]
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
