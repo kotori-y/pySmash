@@ -161,7 +161,7 @@ class MeaningfulCircular(Circular):
                           maxFragment, nJobs)
 
     def GetMeaningfulCircularMatrix(self, labels, aimLabel=1,
-                                    minNum=5, pThreshold=0.05, 
+                                    minNum=5, pThreshold=0.05,
                                     accuracy=0.70, Bonferroni=True):
         """
         """
@@ -184,10 +184,10 @@ class MeaningfulCircular(Circular):
                 meanPvalue[col] = pvalue
 
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
-        
+
         if Bonferroni:
             meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
-            meanPvalue = meanPvalue[meanPvalue.Pvalue<=pThreshold]
+            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
         else:
             pass
 
@@ -222,7 +222,7 @@ class MeaningfulPath(Path):
 
     def __init__(self, mols,
                  minPath=1, maxPath=7,
-                 nBits=1024, folded=False, 
+                 nBits=1024, folded=False,
                  nJobs=1, maxFragment=True):
         """
         """
@@ -232,7 +232,7 @@ class MeaningfulPath(Path):
                       maxFragment)
 
     def GetMeaningfulPathMatrix(self, labels, aimLabel=1,
-                                minNum=5, pThreshold=0.05, 
+                                minNum=5, pThreshold=0.05,
                                 accuracy=0.70):
         """
         """
@@ -270,6 +270,19 @@ class MeaningfulPath(Path):
         return meanPvalue, meanMatrix
 
 
+class MeaningfulFunctionGroup(FunctionGroup):
+
+    def __init__(self, mols, nJobs=1):
+
+        FunctionGroup.__init__(self, mols, nJobs)
+
+    def GetMeaningfulFGMatrix(self, labels, aimLabel=1,
+                              minNum=5, pThreshold=0.05,
+                              accuracy=0.70):
+        
+        
+
+
 if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress
@@ -288,6 +301,8 @@ if '__main__' == __name__:
     # meanPvalue, meanMatrix = circular.GetMeaningfulCircularMatrix(y_true)
 
     path = MeaningfulPath(mols, minPath=1,
-                          maxPath=7, nJobs=4)
+                          maxPath=7, nJobs=4,
+                          maxFragment=True)
+
     meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
     print(meanMatrix)

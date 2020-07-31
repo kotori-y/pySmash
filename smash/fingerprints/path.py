@@ -24,21 +24,21 @@ __all__ = ['GetFoldedPathFragment',
 def _DisposePathFragments(fragments, maxFragment=True):
 
     def func(frags):              
-        sets={frozenset(e) for e in frags}  
+        sets=[set(e) for e in frags]
         us=[]
         for e in sets:
             if any(e < s for s in sets):
                 continue
             else:
-                us.append(list(e))   
+                us.append(str(e))
         return us
     
     keys = list(fragments.keys())
     if maxFragment:
-        dic = dic = {str(set(x)):k for k,v in fragments.items() for x in v}
+        dic = {str(set(x)):k for k,v in fragments.items() for x in v}
         fragments = [i for j in fragments.values() for i in j]
         fragments = func(fragments)
-        fragments = {dic[str(set(k))]:k for k in fragments}
+        fragments = {dic[k]:k for k in fragments}
     else:
         pass
     
@@ -174,8 +174,7 @@ def GetPathFragment(mol,
     return bitInfo
 
 if '__main__' == __name__:
-    from rdkit import Chem
-
-    mol = Chem.MolFromSmiles('CNCC(O)c1ccc(O)c(O)c1')
+    
+    mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
     frag = GetPathFragment(mol, maxFragment=True)
     print(frag)
