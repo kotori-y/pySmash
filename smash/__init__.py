@@ -279,8 +279,40 @@ class MeaningfulFunctionGroup(FunctionGroup):
     def GetMeaningfulFGMatrix(self, labels, aimLabel=1,
                               minNum=5, pThreshold=0.05,
                               accuracy=0.70):
-        
-        
+
+        matrix = self.GetFunctionGroupsMatrix()
+
+        bo = (matrix.sum(axis=0) >= minNum).values
+        matrix = matrix.loc[:, bo]
+
+        n = len(labels)
+        m = (labels == aimLabel).sum()
+
+        meanPvalue = {}
+        for col, val in matrix.iteritems():
+
+            ns = val.sum()
+            ms = (val[labels == aimLabel] == 1).sum()
+
+            pvalue = sum(Pvalue(n, m, ns, ms))
+            if pvalue <= pThreshold:
+                meanPvalue[col] = pvalue
+
+        meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
+        meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+
+        meanPvalue['Total'] = meanMatrix.sum(axis=0)
+        meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
+        meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
+        meanPvalue['Coverage'] = meanPvalue['Hitted']/m
+
+        if accuracy is not None:
+            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
+            meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
+        else:
+            pass
+        return meanPvalue, meanMatrix
+
 
 
 if '__main__' == __name__:
@@ -300,9 +332,14 @@ if '__main__' == __name__:
     #                               minRadius=3, maxFragment=True, nJobs=4)
     # meanPvalue, meanMatrix = circular.GetMeaningfulCircularMatrix(y_true)
 
-    path = MeaningfulPath(mols, minPath=1,
-                          maxPath=7, nJobs=4,
-                          maxFragment=True)
+    # path = MeaningfulPath(mols, minPath=1,
+    #                       maxPath=7, nJobs=4,
+    #                       maxFragment=True)
 
-    meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
+    # meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
+    # print(meanMatrix)
+
+    mfg = MeaningfulFunctionGroup(mols, nJobs=4)
+
+    meanPvalue, meanMatrix = mfg.GetMeaningfulFGMatrix(y_true)
     print(meanMatrix)
