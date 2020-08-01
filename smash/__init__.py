@@ -24,10 +24,10 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from IPython.display import SVG
 from rdkit.Chem import rdDepictor
 
-# try:
-#     from .fingerprints import Circular, Path, FunctionGroup
-# except Exception:
-from fingerprints import Circular, Path, FunctionGroup
+try:
+    from .fingerprints import Circular, Path, FunctionGroup
+except Exception:
+    from fingerprints import Circular, Path, FunctionGroup
 
 
 class NotFittedError(Exception):

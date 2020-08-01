@@ -40,16 +40,18 @@ class SmashGui(Tk):
         """
         Tk.__init__(self)
         # self.pack()
-        self.geometry('600x380+500+200')
+        self.geometry('600x400+500+200')
         self.resizable(0, 0)
         self.title('Smash molecule based on fingerprint')
 
-        self.bg = '#fdd8aa'
-        self.fg = '#654644'
+        self.bg = '#abbfc5'
+        self.fg = '#b70131'
         self.btg = '#fdafaa'
 
         self.filename = ''
         self.lblFont = ('Times New Roman', 14)
+
+        self.creatTab()
         self.createWidgets()
 
         self.thread_run = None
@@ -263,6 +265,17 @@ class SmashGui(Tk):
 
         btnNext['state'] = 'normal'
 
+    def creatTab(self):
+        tab_main=ttk.Notebook(self)
+        tab_main.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+        
+        self.fitTab = Frame(tab_main)
+        tab_main.add(self.fitTab, text='Calculate')
+        predTab = Frame(tab_main)
+        tab_main.add(predTab, text='Predict')
+
+
+
     def createWidgets(self):
         def getFileName():
             self.txtFile['state'] = 'normal'
@@ -333,74 +346,85 @@ class SmashGui(Tk):
         # image = tk.PhotoImage(file='logo.gif')
         # imgLabel = Label(self, image=image).place(x=170,y=20)
 
-        bbg = Label(self, bg=self.bg,
-                    width=500, height=300)
-        bbg.pack()
-
         ###################### Select File Module #######################
-        lblFile = Label(self, text='Select a file:',
-                        font=self.lblFont, bg=self.bg,
-                        fg=self.fg)
+        color = '#ffab66'
+        bbg = Label(self.fitTab, bg=color,
+                    width=500, height=4)
+        bbg.place(x=0, y=0)
+
+        lblFile = Label(self.fitTab, text='>>> Select the file',
+                        font=self.lblFont, bg=color,
+                        fg='#b70131')
         lblFile.place(x=5, y=10)
 
-        self.txtFile = Entry(self, width=60)
+        self.txtFile = Entry(self.fitTab, width=60)
         self.txtFile.place(x=7, y=35)
         self.txtFile['state'] = 'readonly'
 
-        btnGetFile = Button(self, text='Browse...',
+        btnGetFile = Button(self.fitTab, text='Browse...',
                             command=getFileName,
-                            bg=self.btg,
-                            width=20)
+                            bg='#66baff',
+                            width=18)
         btnGetFile.place(x=440, y=30)
-
         ####################### Select File Module #######################
 
+
         ####################### Select Aim Field Module #######################
-        lblField = Label(self, text='Select related field and aim label:',
-                         font=self.lblFont, bg=self.bg, fg=self.fg)
-        lblField.place(x=7, y=70)
+        color = '#ffb97f'
+        bbg = Label(self.fitTab, bg=color,
+                    width=500, height=4)
+        bbg.place(x=0, y=74)
 
-        lblSmiles = Label(self, text='SMILES',
+        lblField = Label(self.fitTab, text='>>> Select related field',
+                         font=self.lblFont, bg=color, fg=self.fg)
+        lblField.place(x=0, y=74)
+
+        lblSmiles = Label(self.fitTab, text='SMILES',
                           font=('Times New Roman', 12),
-                          bg=self.bg)
-        lblSmiles.place(x=20, y=100)
+                          bg=color)
+        lblSmiles.place(x=20, y=105)
 
-        self.cmbSmiles = ttk.Combobox(self, width=12)
-        self.cmbSmiles.place(x=85, y=100)
+        self.cmbSmiles = ttk.Combobox(self.fitTab, width=12)
+        self.cmbSmiles.place(x=85, y=105)
 
         self.cmbSmiles.bind("<<ComboboxSelected>>", _changesmiles)
 
-        lbllabel = Label(self, text='Label',
+        lbllabel = Label(self.fitTab, text='Label',
                          font=('Times New Roman', 13),
-                         bg=self.bg)
-        lbllabel.place(x=210, y=100)
+                         bg=color)
+        lbllabel.place(x=210, y=105)
 
-        self.cmbLabel = ttk.Combobox(self, width=12)
-        self.cmbLabel.place(x=260, y=100)
+        self.cmbLabel = ttk.Combobox(self.fitTab, width=12)
+        self.cmbLabel.place(x=260, y=105)
         self.cmbLabel.bind("<<ComboboxSelected>>", chooseAimLabel)
 
-        lbllabel = Label(self, text='Aim Label',
+        lbllabel = Label(self.fitTab, text='Aim Label',
                          font=('Times New Roman', 13),
-                         bg=self.bg)
-        lbllabel.place(x=385, y=100)
+                         bg=color)
+        lbllabel.place(x=385, y=105)
 
-        self.cmbAim = ttk.Combobox(self, width=12)
-        self.cmbAim.place(x=468, y=100)
+        self.cmbAim = ttk.Combobox(self.fitTab, width=12)
+        self.cmbAim.place(x=468, y=105)
         ####################### Select Aim Field Module #######################
 
         ####################### Select Fragment Type #######################
-        lblFPM = Label(self, text="Select fragment type and adjust parameter",
-                       font=self.lblFont, bg=self.bg, fg=self.fg)
-        lblFPM.place(x=27, y=140)
+        color = '#ffc799'
+        bbg = Label(self.fitTab, bg=color,
+                    width=45, height=10)
+        bbg.place(x=0, y=140)
 
-        lblFP = Label(self, text='Fragment Type',
+        lblFPM = Label(self.fitTab, text=">>> Adjust fragment parameter",
+                       font=self.lblFont, bg=color, fg=self.fg)
+        lblFPM.place(x=0, y=140)
+
+        lblFP = Label(self.fitTab, text='Fragment Type',
                       font=('Times New Roman', 12),
-                      bg=self.bg)
-        lblFP.place(x=60, y=170)
+                      bg=color)
+        lblFP.place(x=15, y=180)
 
-        self.cmbFP = ttk.Combobox(self, width=14)
+        self.cmbFP = ttk.Combobox(self.fitTab, width=14)
         self.cmbFP['values'] = ['Circular', 'Path', 'Function Group']
-        self.cmbFP.place(x=165, y=170)
+        self.cmbFP.place(x=120, y=180)
         self.cmbFP['state'] = "readonly"
         self.cmbFP.bind("<<ComboboxSelected>>", changestate)
         ####################### Select Fragment Type #######################
@@ -424,78 +448,86 @@ class SmashGui(Tk):
         # txtnBits = Entry(self, width=6, textvariable=self.nBits)
         # txtnBits.place(x=243, y=205)
 
-        lblminRadius = Label(self, text='minRadius', bg=self.bg,
+        lblminRadius = Label(self.fitTab, text='minRadius', bg=color,
                              font=('Times New Roman', 13))
-        lblminRadius.place(x=40, y=220)
+        lblminRadius.place(x=15, y=220)
         self.minRadius = tk.IntVar(value=1)
-        txtminRadius = Entry(self, width=5, textvariable=self.minRadius)
-        txtminRadius.place(x=120, y=220)
+        txtminRadius = Entry(self.fitTab, width=5, textvariable=self.minRadius)
+        txtminRadius.place(x=95, y=220)
 
-        lblRadius = Label(self, text='maxRadius', bg=self.bg,
+        lblRadius = Label(self.fitTab, text='maxRadius', bg=color,
                           font=('Times New Roman', 13))
-        lblRadius.place(x=180, y=220)
+        lblRadius.place(x=155, y=220)
         self.Radius = tk.IntVar(value=2)
-        txtRadius = Entry(self, width=5, textvariable=self.Radius)
-        txtRadius.place(x=260, y=220)
+        txtRadius = Entry(self.fitTab, width=5, textvariable=self.Radius)
+        txtRadius.place(x=235, y=220)
 
-        lblminPath = Label(self, text='minPath', bg=self.bg,
+        lblminPath = Label(self.fitTab, text='minPath', bg=color,
                            font=('Times New Roman', 13))
-        lblminPath.place(x=40, y=275)
+        lblminPath.place(x=15, y=275)
         self.minPath = tk.IntVar(value=1)
-        txtminPath = Entry(self, width=5, textvariable=self.minPath)
-        txtminPath.place(x=120, y=275)
+        txtminPath = Entry(self.fitTab, width=5, textvariable=self.minPath)
+        txtminPath.place(x=95, y=275)
 
-        lblmaxPath = Label(self, text='maxPath', bg=self.bg,
+        lblmaxPath = Label(self.fitTab, text='maxPath', bg=color,
                            font=('Times New Roman', 13))
-        lblmaxPath.place(x=180, y=275)
+        lblmaxPath.place(x=155, y=275)
         self.maxPath = tk.IntVar(value=7)
-        txtmaxPath = Entry(self, width=5, textvariable=self.maxPath)
-        txtmaxPath.place(x=260, y=275)
-
+        txtmaxPath = Entry(self.fitTab, width=5, textvariable=self.maxPath)
+        txtmaxPath.place(x=235, y=275)
         ####################### Adjust Figerprint Param Module#######################
 
         ####################### Adjust Running Param Module#######################
-        lblRP = Label(self, text='Adjust running parameter:',
-                      bg=self.bg, fg=self.fg, font=self.lblFont)
-        lblRP.place(x=340, y=140)
+        color = '#ffd5b2'
+        bbg = Label(self.fitTab, bg=color,
+                    width=45, height=10)
+        bbg.place(x=310, y=140)
+        lblRP = Label(self.fitTab, text='>>> Adjust running parameter',
+                      bg=color, fg=self.fg, font=self.lblFont)
+        lblRP.place(x=310, y=140)
 
-        lblminNum = Label(self, text='minNum', bg=self.bg,
+        lblminNum = Label(self.fitTab, text='minNum', bg=color,
                           font=('Times New Roman', 13))
         lblminNum.place(x=360, y=170)
         self.minNum = tk.IntVar(value=5)
-        txtminNum = Entry(self, width=7, textvariable=self.minNum)
+        txtminNum = Entry(self.fitTab, width=7, textvariable=self.minNum)
         txtminNum.place(x=440, y=170)
 
-        lblRatio = Label(self, text='minRatio', bg=self.bg,
+        lblRatio = Label(self.fitTab, text='minRatio', bg=color,
                          font=('Times New Roman', 13))
         lblRatio.place(x=360, y=205)
         self.minRatio = tk.DoubleVar(value=0.4)
-        txtminRatio = Entry(self, width=7, textvariable=self.minRatio)
+        txtminRatio = Entry(self.fitTab, width=7, textvariable=self.minRatio)
         txtminRatio.place(x=440, y=205)
 
-        lblPvalue = Label(self, text='p-value', bg=self.bg,
+        lblPvalue = Label(self.fitTab, text='p-value', bg=color,
                           font=('Times New Roman', 13))
         lblPvalue.place(x=360, y=240)
         self.Pvalue = tk.DoubleVar(value=0.05)
-        txtPvalue = Entry(self, width=7, textvariable=self.Pvalue)
+        txtPvalue = Entry(self.fitTab, width=7, textvariable=self.Pvalue)
         txtPvalue.place(x=440, y=240)
 
-        lblnjobs = Label(self, text='n_jobs', bg=self.bg,
+        lblnjobs = Label(self.fitTab, text='n_jobs', bg=color,
                          font=('Times New Roman', 13))
         lblnjobs.place(x=360, y=275)
         self.n_jobs = tk.IntVar(value=1)
-        txtnjobs = Entry(self, width=7, textvariable=self.n_jobs)
+        txtnjobs = Entry(self.fitTab, width=7, textvariable=self.n_jobs)
         txtnjobs.place(x=440, y=275)
         ####################### Adjust Running Param Module#######################
 
         ####################### Run Module#######################
-        btnRun = Button(self, text='Run',
+        color = '#fff1e5'
+        bbg = Label(self.fitTab, bg=color,
+                    width=100, height=10)
+        bbg.place(x=0, y=310)
+
+        btnRun = Button(self.fitTab, text='Calculate',
                         font=('Times New Roman', 16),
-                        bg=self.btg, width=30, height=1,
+                        bg='#e5f3ff', width=10, height=1,
                         command=lambda: self.main_thread(self.main),
                         # command=self.preview
                         )
-        btnRun.place(x=100, y=320)
+        btnRun.place(x=210, y=320)
 
         disable()
 

@@ -106,14 +106,13 @@ def getFingerprintRes(textPad, data, **kwgrs):
     ############# Obtain Fingerprint Matrix #############
     add('Obtain Fingerprint Matrix... ')
     if fingerprint == 'Circular':
-        circular = Circular(mols,
-                            maxRadius=kwgrs.get('radius'),
+        circular = Circular(maxRadius=kwgrs.get('radius'),
                             minRadius=kwgrs.get('minRadius'),
                             folded=kwgrs.get('folded'),
                             # nBits=kwgrs.get('nBits'),
                             maxFragment=True,
                             nJobs=n_jobs)
-        subMatrix = circular.GetCircularMatrix()
+        subMatrix = circular.GetCircularMatrix(mols)
 
     elif fingerprint == 'Path':
         path = Path(mols,
