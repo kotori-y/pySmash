@@ -157,6 +157,8 @@ def getFingerprintRes(textPad, data, **kwgrs):
 
     subPvalue = pd.DataFrame(dict(subPvalue), index=['Val']).T
     subPvalue = subPvalue[subPvalue['Val'] <= 0.05]
+    subMatrix = subMatrix.loc[:, subPvalue.index]
+
     subMatrix['SMILES'] = smis
     subMatrix['Label'] = labels.values
     add('Successed!\n\n')
