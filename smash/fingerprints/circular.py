@@ -16,13 +16,16 @@ from rdkit import Chem
 import pandas as pd
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprint
+from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem.Draw import _getMorganEnv
+
 
 __all__ = ['GetFoldedCircularFragment',
            'GetUnfoldedCircularFragment',
            'GetCircularFragment']
 
 
-def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=False):
+def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=True, svg=False):
     """dispose the bitinfo retrived from
     GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
 
@@ -58,15 +61,48 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=False):
         a, r = info
 
         if r >= minRadius:
-            smi2 = getSubstructSmi(mol, a, r)
-            fragments[idx] = smi2
+            smi, svgImg = DrawMorganEnv(mol, a, r)
+            fragments[idx] = (smi, svgImg) if svg else smi
         else:
             pass
 
     return (idxAll, fragments)
 
 
-def GetFoldedCircularFragment(mol, minRadius=3, maxRadius=6, nBits=1024, maxFragment=False):
+def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=True,
+                  aromaticColor=(0.9, 0.9, 0.2), ringColor=(0.8, 0.8, 0.8),
+                  centerColor=(0.6, 0.6, 0.9), extraColor=(0.9, 0.9, 0.9), drawOptions=None,
+                  **kwargs):
+    menv = _getMorganEnv(mol, atomId, radius, baseRad, aromaticColor, ringColor, centerColor,
+                         extraColor, **kwargs)
+
+    submol = menv.submol
+    subMol = Chem.MolToSmiles(submol, canonical=True, isomericSmiles=False)
+    # Drawing
+    if useSVG:
+        drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
+    else:
+        drawer = rdMolDraw2D.MolDraw2DCairo(molSize[0], molSize[1])
+
+    if drawOptions is None:
+        drawopt = drawer.drawOptions()
+        drawopt.continuousHighlight = False
+    else:
+        drawOptions.continuousHighlight = False
+        drawer.SetDrawOptions(drawOptions)
+
+    drawer.DrawMolecule(menv.submol, highlightAtoms=menv.highlightAtoms,
+                        highlightAtomColors=menv.atomColors, highlightBonds=menv.highlightBonds,
+                        highlightBondColors=menv.bondColors, highlightAtomRadii=menv.highlightRadii,
+                        **kwargs)
+    drawer.FinishDrawing()
+    return subMol, drawer.GetDrawingText()
+
+
+def GetFoldedCircularFragment(mol,
+                              minRadius=3, maxRadius=6, 
+                              nBits=1024, maxFragment=True, 
+                              svg=False):
     """Get folded circular fragment under specific radius
 
     Parameters
@@ -94,11 +130,11 @@ def GetFoldedCircularFragment(mol, minRadius=3, maxRadius=6, nBits=1024, maxFrag
                                        nBits=nBits,
                                        bitInfo=bitInfo)
 
-    bitInfo = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment)
-    return bitInfo
+    fragments = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment, svg)
+    return fragments
 
 
-def GetUnfoldedCircularFragment(mol, minRadius=3, maxRadius=6, maxFragment=False):
+def GetUnfoldedCircularFragment(mol, minRadius=3, maxRadius=6, maxFragment=True, svg=False):
     """Get unfolded circular fragment under specific radius
 
     Parameters
@@ -123,59 +159,14 @@ def GetUnfoldedCircularFragment(mol, minRadius=3, maxRadius=6, maxFragment=False
                               radius=maxRadius,
                               bitInfo=bitInfo)
 
-    bitInfo = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment)
-    return bitInfo
-
-
-def includeRingMembership(s, n):
-    r = ';R]'
-    d = "]"
-    return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
-
-
-def includeDegree(s, n, d):
-    r = ';D'+str(d)+']'
-    d = "]"
-    return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
-
-
-def writePropsToSmiles(mol, smi, order):
-    # finalsmi = copy.deepcopy(smi)
-    finalsmi = smi
-    for i, a in enumerate(order):
-        atom = mol.GetAtomWithIdx(a)
-        if atom.IsInRing():
-            finalsmi = includeRingMembership(finalsmi, i+1)
-        finalsmi = includeDegree(finalsmi, i+1, atom.GetDegree())
-    return finalsmi
-
-
-def getSubstructSmi(mol, atomID, radius):
-    if radius > 0:
-        env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius, atomID)
-        atomsToUse = []
-        for b in env:
-            atomsToUse.append(mol.GetBondWithIdx(b).GetBeginAtomIdx())
-            atomsToUse.append(mol.GetBondWithIdx(b).GetEndAtomIdx())
-        atomsToUse = list(set(atomsToUse))
-    else:
-        atomsToUse = [atomID]
-        env = None
-
-    smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=env,
-                                   allHsExplicit=True, allBondsExplicit=True,
-                                   rootedAtAtom=atomID)
-    order = eval(mol.GetProp("_smilesAtomOutputOrder"))
-    smi2 = writePropsToSmiles(mol, smi, order)
-    return smi2
+    fragments = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment, svg)
+    return fragments
 
 
 def GetCircularFragment(mol,
-                        maxRadius=6,
-                        minRadius=3,
-                        nBits=1024,
-                        folded=True,
-                        maxFragment=False):
+                        maxRadius=6, minRadius=3,
+                        nBits=1024, folded=False,
+                        maxFragment=True, svg=False):
     """Get circular fragment under specific radius
 
     Parameters
@@ -200,40 +191,24 @@ def GetCircularFragment(mol,
         circular fragment with specific radius
     """
     if folded:
-        bitInfo = GetFoldedCircularFragment(mol,
-                                            minRadius=minRadius,
-                                            maxRadius=maxRadius,
-                                            nBits=nBits,
-                                            maxFragment=maxFragment)
+        fragments = GetFoldedCircularFragment(mol,
+                                              minRadius=minRadius, maxRadius=maxRadius,
+                                              nBits=nBits, maxFragment=maxFragment,
+                                              svg=svg)
     else:
-        bitInfo = GetUnfoldedCircularFragment(mol,
-                                              minRadius=minRadius,
-                                              maxRadius=maxRadius,
-                                              maxFragment=maxFragment)
+        fragments = GetUnfoldedCircularFragment(mol,
+                                                minRadius=minRadius, maxRadius=maxRadius,
+                                                maxFragment=maxFragment, svg=svg)
 
-    # substrcutures = []
-
-    # for info in bitInfo[1]:
-    #     a, r = info
-
-    #     if r >= minRadius:
-    #         smi2 = getSubstructSmi(mol, a, r)
-    #         substrcutures.append(smi2)
-    #     else:
-    #         pass
-
-    # substrcutures = list(set(substrcutures))
-    return bitInfo
+    return fragments
 
 
 if '__main__' == __name__:
     mol = Chem.MolFromSmiles('C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1')
 
-    bitInfo = GetUnfoldedCircularFragment(
-        mol, maxRadius=3, minRadius=1, maxFragment=False)
-    print(bitInfo[1].keys())
+    fragments = GetCircularFragment(
+        mol, maxRadius=3, minRadius=1, maxFragment=False, svg=True)
+    print(fragments[1].keys())
 
-    # fragments = GetCircularFragment(mol,
-    #                                 folded=False, minRadius=3,
-    #                                 maxRadius=6, maxFragment=True)
-    # print(fragments)
+
+
