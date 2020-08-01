@@ -24,10 +24,16 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from IPython.display import SVG
 from rdkit.Chem import rdDepictor
 
-try:
-    from .fingerprints import Circular, Path, FunctionGroup
-except Exception:
-    from fingerprints import Circular, Path, FunctionGroup
+# try:
+#     from .fingerprints import Circular, Path, FunctionGroup
+# except Exception:
+from fingerprints import Circular, Path, FunctionGroup
+
+
+class NotFittedError(Exception):
+    pass
+    # def __init__(self, msg):
+    #     self.message = msg
 
 
 def Pvalue(n, m, ns, ms):
@@ -62,7 +68,7 @@ def Pvalue(n, m, ns, ms):
 
 
 def HighlightAtoms(mol, highlightAtoms, figsize=[400, 200], kekulize=True):
-    """This function is used for showing which part 
+    """This function is used for showing which part
     of fragment matched the SMARTS by the id of atoms
     This function is derived from Scopy.
 
@@ -146,26 +152,29 @@ def ShowResult(subMatrix, subPvalue, label_field='Label',
     # out.to_html('out_html.html', escape=False)
 
 
-class MeaningfulCircular(Circular):
+class CircularLearner(Circular):
 
-    def __init__(self, mols,
+    def __init__(self,
                  maxRadius=2, minRadius=1,
                  nBits=1024, folded=False,
                  maxFragment=True, nJobs=1,
                  ):
         """
         """
-        Circular.__init__(self, mols,
+        Circular.__init__(self,
                           maxRadius, minRadius,
                           nBits, folded,
                           maxFragment, nJobs)
+        self.meanPvalue = None
+        self.meanMatrix = None
 
-    def GetMeaningfulCircularMatrix(self, labels, aimLabel=1,
-                                    minNum=5, pThreshold=0.05,
-                                    accuracy=0.70, Bonferroni=True):
+    def fit(self, mols,
+            labels, aimLabel=1,
+            minNum=5, pThreshold=0.05,
+            accuracy=None, Bonferroni=False):
         """
         """
-        matrix = self.GetCircularMatrix()
+        matrix = self.GetCircularMatrix(mols)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -202,7 +211,23 @@ class MeaningfulCircular(Circular):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-        return meanPvalue, meanMatrix
+
+        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
+        return self
+
+    def predict(self, mols):
+        if self.meanPvalue is None or self.meanMatrix is None:
+           raise NotFittedError(
+               "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
+
+        predMatrix = self.GetCircularMatrix(mols)
+        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
+        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
+        y_pred = (predMatrix.sum(axis=1) > 0) + 0
+
+        return y_pred.values, predMatrix
+        
+
 
         # pValue = mp.Manager().dict()
         # pool = mp.Pool(self.nJobs)
@@ -314,7 +339,6 @@ class MeaningfulFunctionGroup(FunctionGroup):
         return meanPvalue, meanMatrix
 
 
-
 if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress
@@ -328,9 +352,13 @@ if '__main__' == __name__:
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
-    # circular = MeaningfulCircular(mols, folded=False, maxRadius=6,
-    #                               minRadius=3, maxFragment=True, nJobs=4)
-    # meanPvalue, meanMatrix = circular.GetMeaningfulCircularMatrix(y_true)
+    circular = CircularLearner(minRadius=1, maxRadius=6,
+                               maxFragment=True, nJobs=4)
+
+    circular.fit(mols, y_true)
+    y_pred, predMatrix = circular.predict(mols)
+    print(y_pred)
+    # print(circular.meanPvalue.shape)
 
     # path = MeaningfulPath(mols, minPath=1,
     #                       maxPath=7, nJobs=4,
@@ -339,7 +367,7 @@ if '__main__' == __name__:
     # meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
     # print(meanMatrix)
 
-    mfg = MeaningfulFunctionGroup(mols, nJobs=4)
+    # mfg = MeaningfulFunctionGroup(mols, nJobs=4)
 
-    meanPvalue, meanMatrix = mfg.GetMeaningfulFGMatrix(y_true)
-    print(meanMatrix)
+    # meanPvalue, meanMatrix = mfg.GetMeaningfulFGMatrix(y_true)
+    # print(meanMatrix)

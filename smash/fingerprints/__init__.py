@@ -32,10 +32,11 @@ except:
 
 class Circular(object):
 
-    def __init__(self, mols,
+    def __init__(self,
                  maxRadius=2, minRadius=1,
-                 nBits=1024, folded=True,
-                 maxFragment=False, nJobs=1):
+                 nBits=1024, folded=False,
+                 maxFragment=True, svg=False, 
+                 nJobs=1):
         """
         Init
 
@@ -64,15 +65,16 @@ class Circular(object):
         None.
 
         """
-        self.mols = mols if isinstance(mols, Iterable) else (mols, )
+        # self.mols = mols if isinstance(mols, Iterable) else (mols, )
         self.nBits = nBits if folded else None
         self.folded = folded
         self.maxRadius = maxRadius
         self.minRadius = minRadius
         self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
+        self.svg = svg
 
-    def GetCircularFragmentLib(self):
+    def GetCircularFragmentLib(self, mols):
         """
         Calculate morgan fingerprint and return the info of NonzeroElements
 
@@ -87,17 +89,20 @@ class Circular(object):
                        maxRadius=self.maxRadius,
                        nBits=self.nBits,
                        folded=self.folded,
-                       maxFragment=self.maxFragment)
+                       maxFragment=self.maxFragment,
+                       svg=self.svg)
+        
+        mols = mols if isinstance(mols, Iterable) else (mols, )
 
         pool = Pool(self.nJobs)
-        bitInfo = pool.map_async(func, self.mols).get()
+        fragments = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
 
-        self.bitInfo = bitInfo
-        return bitInfo
+        self.fragments = fragments
+        return fragments
 
-    def GetCircularMatrix(self):
+    def GetCircularMatrix(self, mols):
         """return circular matrix
 
         Returns
@@ -106,19 +111,19 @@ class Circular(object):
             the fragment matrix of molecules
 
         """
-        bitInfo = self.GetCircularFragmentLib()
+        fragments = self.GetCircularFragmentLib(mols)
         # pool.close()
         # pool.join()
 
-        unique = [bit for info in bitInfo for bit in info[1]]
+        unique = [bit for info in fragments for bit in info[1]]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
+        matrix = np.zeros((len(mols), num), dtype=np.int8)
 
         for idx, arr in enumerate(matrix):
-            info = bitInfo[idx]
+            info = fragments[idx]
             for frag in unique:
                 if frag in info[0]:
                     arr[dic[frag]] = 1
@@ -284,18 +289,19 @@ if '__main__' == __name__:
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    # circular = Circular(mols, folded=False, maxRadius=3,
-    #                     minRadius=1, maxFragment=False)
-    # circular_matrix = circular.GetCircularMatrix()
-    # print(circular_matrix)
+    circular = Circular(folded=False, maxRadius=3,
+                        minRadius=1, maxFragment=True,
+                        svg=True)
+    circular_matrix = circular.GetCircularMatrix(mols)
+    print(circular_matrix)
     # circular_matrix.insert(0, 'SMILES', smis)
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
-    path = Path(mols, folded=False, maxFragment=True)
+    # path = Path(mols, folded=False, maxFragment=True)
     # path_frag = path.GetPathFragmentLib()
     # print(path_frag[0])
-    path_matrix = path.GetPathMatrix()
-    print(path_matrix.shape)
+    # path_matrix = path.GetPathMatrix()
+    # print(path_matrix.shape)
 
     # fg = FunctionGroup(mols)
     # print(fg.GetFunctionGroupsMatrix())
