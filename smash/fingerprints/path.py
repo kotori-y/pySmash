@@ -15,40 +15,75 @@ Created on Sun Jun 14 15:13:29 2020
 from rdkit import Chem
 from rdkit.Chem.rdmolops import RDKFingerprint
 from rdkit.Chem.rdmolops import UnfoldedRDKFingerprintCountBased
+from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem.Draw import _getRDKitEnv
 
 __all__ = ['GetFoldedPathFragment',
            'GetUnfoldedPathFragment',
            'GetPathFragment']
 
 
-def _DisposePathFragments(fragments, maxFragment=True):
+def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
 
-    def func(frags):              
-        sets=[set(e) for e in frags]
-        us=[]
+    def func(frags):
+        sets = [set(e) for e in frags]
+        us = []
         for e in sets:
             if any(e < s for s in sets):
                 continue
             else:
                 us.append(str(e))
         return us
-    
-    keys = list(fragments.keys())
+
+    fragments = {}
+    keys = list(bitInfo.keys())
     if maxFragment:
-        dic = {str(set(x)):k for k,v in fragments.items() for x in v}
-        fragments = [i for j in fragments.values() for i in j]
-        fragments = func(fragments)
-        fragments = {dic[k]:k for k in fragments}
+        dic = {str(set(x)): k for k, v in bitInfo.items() for x in v}
+        bitInfo = [i for j in bitInfo.values() for i in j]
+        bitInfo = func(bitInfo)
+        for k in bitInfo:
+            bondPath = list(eval(k))
+            smi, svgImg = DrawRDKitEnv(mol, bondPath)
+            fragments[dic[k]] = (smi, svgImg) if svg else smi
     else:
         pass
-    
+
     return (keys, fragments)
 
 
+def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
+                 aromaticColor=(0.9, 0.9, 0.2), extraColor=(0.9, 0.9, 0.9), nonAromaticColor=None,
+                 drawOptions=None, **kwargs):
+    menv = _getRDKitEnv(mol, bondPath, baseRad, aromaticColor,
+                        extraColor, nonAromaticColor, **kwargs)
+    submol = menv.submol
+    subMol = Chem.MolToSmiles(submol, canonical=True, isomericSmiles=False)
+
+    # Drawing
+    if useSVG:
+        drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
+    else:
+        drawer = rdMolDraw2D.MolDraw2DCairo(molSize[0], molSize[1])
+
+    if drawOptions is None:
+        drawopt = drawer.drawOptions()
+        drawopt.continuousHighlight = False
+    else:
+        drawOptions.continuousHighlight = False
+        drawer.SetDrawOptions(drawOptions)
+
+    drawer.DrawMolecule(menv.submol, highlightAtoms=menv.highlightAtoms,
+                        highlightAtomColors=menv.atomColors, highlightBonds=menv.highlightBonds,
+                        highlightBondColors=menv.bondColors, highlightAtomRadii=menv.highlightRadii,
+                        **kwargs)
+    drawer.FinishDrawing()
+    return subMol, drawer.GetDrawingText()
 
 
-
-def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048, maxFragment=True):
+def GetFoldedPathFragment(mol,
+                          minPath=1, maxPath=7,
+                          nBits=2048, maxFragment=True,
+                          svg=False):
     """Calculate folded path fragment.
 
     Parameters
@@ -76,12 +111,15 @@ def GetFoldedPathFragment(mol, minPath=1, maxPath=7, nBits=2048, maxFragment=Tru
                         maxPath=maxPath,
                         fpSize=nBits,
                         bitInfo=bitInfo)
-    
-    fragments = _DisposePathFragments(bitInfo, maxFragment=maxFragment)                  
+
+    fragments = _DisposePathFragments(
+        mol, bitInfo, maxFragment=maxFragment, svg=svg)
     return fragments
 
 
-def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7, maxFragment=True):
+def GetUnfoldedPathFragment(mol,
+                            minPath=1, maxPath=7,
+                            maxFragment=True, svg=False):
     """
     Calculate fingerprint and return the info of each bit
 
@@ -108,26 +146,14 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7, maxFragment=True):
                                           maxPath=maxPath,
                                           bitInfo=bitInfo)
 
-    fragments = _DisposePathFragments(bitInfo, maxFragment=maxFragment)                  
+    fragments = _DisposePathFragments(mol, bitInfo, maxFragment=maxFragment, svg=svg)
     return fragments
 
 
-def getBeginEndAtom(mol):
-    head = {}
-    for bond in mol.GetBonds():
-        idx = bond.GetIdx()
-        begin = bond.GetBeginAtomIdx()
-        end = bond.GetEndAtomIdx()
-        head[idx] = [begin, end]
-    return head
-
-
 def GetPathFragment(mol,
-                    minPath=1,
-                    maxPath=7,
-                    nBits=2048,
-                    folded=False,
-                    maxFragment=True):
+                    minPath=1, maxPath=7,
+                    nBits=2048, folded=False,
+                    maxFragment=True, svg=False):
     """
 
 
@@ -150,15 +176,13 @@ def GetPathFragment(mol,
     """
     if folded:
         bitInfo = GetFoldedPathFragment(mol,
-                                        minPath=minPath,
-                                        maxPath=maxPath,
-                                        nBits=nBits,
-                                        maxFragment=maxFragment)
+                                        minPath=minPath, maxPath=maxPath,
+                                        nBits=nBits, maxFragment=maxFragment,
+                                        svg=svg)
     else:
         bitInfo = GetUnfoldedPathFragment(mol,
-                                          minPath=minPath,
-                                          maxPath=maxPath,
-                                          maxFragment=maxFragment)
+                                          minPath=minPath, maxPath=maxPath,
+                                          maxFragment=maxFragment, svg=svg)
 
     # substrcutures = []
     # head = getBeginEndAtom(mol)
@@ -173,8 +197,9 @@ def GetPathFragment(mol,
     # return substrcutures
     return bitInfo
 
+
 if '__main__' == __name__:
-    
+
     mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
-    frag = GetPathFragment(mol, maxFragment=True)
+    frag = GetPathFragment(mol, maxFragment=True, svg=True)
     print(frag)
