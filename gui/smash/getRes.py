@@ -77,6 +77,9 @@ def getFingerprintRes(textPad, data, **kwgrs):
     minNum = kwgrs.get('minNum')
     n_jobs = kwgrs.get('n_jobs')
     aimLabel = kwgrs.get('aimLabel')
+    pValue = kwgrs.get('pValue')
+    accuracy = kwgrs.get('minAcc')
+    Bonferroni = kwgrs.get('Bonferroni')
     try:
         aimLabel = float(aimLabel)
     except:
@@ -133,9 +136,11 @@ def getFingerprintRes(textPad, data, **kwgrs):
     ############# Disposed with run param #############
     add('Disposed with run param... ')
     subMatrix = subMatrix.loc[:, subMatrix.sum(axis=0) >= minNum]
+    subMatrix.to_csv(r"C:\Users\0720\Desktop\MATE\lzz\subMatrix.txt", sep='\t')
     bo = (subMatrix[labels == aimLabel].sum(
         axis=0)/subMatrix.sum(axis=0)) >= minRatio
     subMatrix = subMatrix.loc[:, bo.values]
+    # print(subMatrix)
     # subMatrix['SMILES'] = smis
     add('Successed!\n\n')
     ############# Disposed with run param #############
@@ -154,8 +159,29 @@ def getFingerprintRes(textPad, data, **kwgrs):
     pool.close()
     pool.join()
 
-    subPvalue = pd.DataFrame(dict(subPvalue), index=['Val']).T
-    subPvalue = subPvalue[subPvalue['Val'] <= 0.05]
+    subPvalue = pd.DataFrame(dict(subPvalue), index=['Pvalue']).T
+    # subPvalue = subPvalue[subPvalue['Pvalue'] <= pValue]
+
+    if Bonferroni:
+        subPvalue['Pvalue'] = subPvalue.Pvalue.values * len(subPvalue)
+        subPvalue = subPvalue[subPvalue.Pvalue <= pValue]
+    else:
+        pass
+
+    subMatrix = subMatrix.reindex(subMatrix.index, axis=0)
+    # print(subMatrix)
+    subPvalue['Total'] = subMatrix.sum(axis=0)
+    subPvalue['Hitted'] = subMatrix[labels == 1].sum(axis=0)
+    subPvalue['Accuracy'] = subPvalue.Hitted/subPvalue.Total
+    subPvalue['Coverage'] = subPvalue['Hitted']/m
+
+    if accuracy is not None:
+        subPvalue = subPvalue[subPvalue.Accuracy >= accuracy]
+        subMatrix = subMatrix.reindex(subPvalue.index, axis=0)
+    else:
+        pass
+
+    # print(subPvalue)
     subMatrix = subMatrix.loc[:, subPvalue.index]
 
     subMatrix['SMILES'] = smis

@@ -53,6 +53,7 @@ class SmashGui(Tk):
 
         self.creatTab()
         self.createWidgets()
+        self.createPredictWidgets()
 
         self.thread_run = None
         self.thread_run_stop = Event()
@@ -61,15 +62,15 @@ class SmashGui(Tk):
         except:
             self.iconbitmap(r"gui\smash\icon.ico")
 
-    def readFile(self, **kwgrs):
+    def readFile(self, file, **kwgrs):
 
-        extendName = os.path.splitext(self.filename)[1]
+        extendName = os.path.splitext(file)[1]
         if extendName == '.csv':
-            data = pd.read_csv(self.filename, **kwgrs)
+            data = pd.read_csv(file, **kwgrs)
         elif extendName == '.txt':
-            data = pd.read_csv(self.filename, sep='\t', **kwgrs)
+            data = pd.read_csv(file, sep='\t', **kwgrs)
         else:
-            data = pd.read_excel(self.filename, **kwgrs)
+            data = pd.read_excel(file, **kwgrs)
 
         return data
         # print(self.data)
@@ -228,7 +229,10 @@ class SmashGui(Tk):
                  'minRatio': self.minRatio.get(),
                  'minNum': self.minNum.get(),
                  'aimLabel': self.cmbAim.get(),
-                 'n_jobs': self.n_jobs.get()}
+                 'n_jobs': self.n_jobs.get(),
+                 'Bonferroni': self.Bonferroni.get(),
+                 'minAccuracy': self.minAcc.get(),
+                 'pValue': self.pValue.get()}
 
         def add(words):
             textPad['state'] = 'normal'
@@ -256,7 +260,7 @@ class SmashGui(Tk):
         btnCancel.place(x=260, y=265, width=50, height=25)
 
         add('Load file... ')
-        data = self.readFile()
+        data = self.readFile(self.filename)
 
         self.subMatrix, self.subPvalue = getFingerprintRes(textPad,
                                                            data, **kwgrs)
@@ -266,15 +270,13 @@ class SmashGui(Tk):
         btnNext['state'] = 'normal'
 
     def creatTab(self):
-        tab_main=ttk.Notebook(self)
+        tab_main = ttk.Notebook(self)
         tab_main.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
-        
+
         self.fitTab = Frame(tab_main)
         tab_main.add(self.fitTab, text='Calculate')
-        predTab = Frame(tab_main)
-        tab_main.add(predTab, text='Predict')
-
-
+        self.predTab = Frame(tab_main)
+        tab_main.add(self.predTab, text='Predict')
 
     def createWidgets(self):
         def getFileName():
@@ -286,7 +288,7 @@ class SmashGui(Tk):
                            ("Text file", "*.txt*")))
             if self.filename:
                 self.txtFile.insert(tk.END, self.filename)
-                data = self.readFile(nrows=0)
+                data = self.readFile(self.filename, nrows=0)
                 self.cols = list(data.columns)
                 self.cmbSmiles["values"] = self.cols
                 self.cmbLabel["values"] = self.cols
@@ -305,7 +307,7 @@ class SmashGui(Tk):
             self.cmbAim['state'] = 'readonly'
             self.cmbFP['state'] = 'readonly'
             self.cmbAim.set('')
-            data = self.readFile(usecols=[self.cmbLabel.get()])
+            data = self.readFile(self.filename, usecols=[self.cmbLabel.get()])
             labels = list(set(data.iloc[:, 0]))
             self.cmbAim['values'] = labels
             self.cmbAim.current(1)
@@ -319,14 +321,18 @@ class SmashGui(Tk):
         def disable(*args):
             txtminRadius['state'], txtRadius['state'], txtminPath['state'],\
                 txtmaxPath['state'], txtminNum['state'], txtminRatio['state'],\
-                    txtPvalue['state'], txtnjobs['state'], btnRun['state'] = ['disable']*9
+                txtPvalue['state'], txtnjobs['state'], btnRun['state'],\
+                txtAcc['state'], cmbBon['state'] = ['disable']*11
 
             self.cmbSmiles['state'], self.cmbLabel['state'], self.cmbAim['state'],\
                 self.cmbFP['state'] = ['disable']*4
 
         def changestate(*args):
             txtminNum['state'], txtminRatio['state'], txtPvalue['state'],\
-                txtnjobs['state'], btnRun['state'] = ['normal']*5
+                txtnjobs['state'], btnRun['state'], txtAcc['state'] = [
+                    'normal']*6
+            cmbBon['state'] = 'readonly'
+
             if self.cmbFP.get() == 'Circular':
                 # cmbFolded['state'] = 'readonly'
                 # ignorenBits()
@@ -367,7 +373,6 @@ class SmashGui(Tk):
                             width=18)
         btnGetFile.place(x=440, y=30)
         ####################### Select File Module #######################
-
 
         ####################### Select Aim Field Module #######################
         color = '#ffb97f'
@@ -488,31 +493,51 @@ class SmashGui(Tk):
 
         lblminNum = Label(self.fitTab, text='minNum', bg=color,
                           font=('Times New Roman', 13))
-        lblminNum.place(x=360, y=170)
+        lblminNum.place(x=320, y=180)
         self.minNum = tk.IntVar(value=5)
         txtminNum = Entry(self.fitTab, width=7, textvariable=self.minNum)
-        txtminNum.place(x=440, y=170)
+        txtminNum.place(x=390, y=180)
 
         lblRatio = Label(self.fitTab, text='minRatio', bg=color,
                          font=('Times New Roman', 13))
-        lblRatio.place(x=360, y=205)
+        lblRatio.place(x=450, y=180)
         self.minRatio = tk.DoubleVar(value=0.4)
         txtminRatio = Entry(self.fitTab, width=7, textvariable=self.minRatio)
-        txtminRatio.place(x=440, y=205)
+        txtminRatio.place(x=520, y=180)
 
         lblPvalue = Label(self.fitTab, text='p-value', bg=color,
                           font=('Times New Roman', 13))
-        lblPvalue.place(x=360, y=240)
-        self.Pvalue = tk.DoubleVar(value=0.05)
-        txtPvalue = Entry(self.fitTab, width=7, textvariable=self.Pvalue)
-        txtPvalue.place(x=440, y=240)
+        lblPvalue.place(x=320, y=230)
+        self.pValue = tk.DoubleVar(value=0.05)
+        txtPvalue = Entry(self.fitTab, width=7, textvariable=self.pValue)
+        txtPvalue.place(x=390, y=230)
+
+        lblAcc = Label(self.fitTab, text='minAcc', bg=color,
+                       font=('Times New Roman', 13))
+        lblAcc.place(x=450, y=230)
+        self.minAcc = tk.DoubleVar(value=0.70)
+        txtAcc = Entry(self.fitTab, width=7, textvariable=self.minAcc)
+        txtAcc.place(x=520, y=230)
 
         lblnjobs = Label(self.fitTab, text='n_jobs', bg=color,
                          font=('Times New Roman', 13))
-        lblnjobs.place(x=360, y=275)
+        lblnjobs.place(x=320, y=280)
         self.n_jobs = tk.IntVar(value=1)
         txtnjobs = Entry(self.fitTab, width=7, textvariable=self.n_jobs)
-        txtnjobs.place(x=440, y=275)
+        txtnjobs.place(x=390, y=280)
+
+        lblBon = Label(self.fitTab, text='Bonferroni',
+                       font=('Times New Roman', 12),
+                       bg=color)
+        lblBon.place(x=450, y=280)
+
+        self.Bonferroni = tk.BooleanVar()
+        cmbBon = ttk.Combobox(self.fitTab, width=4,
+                              textvariable=self.Bonferroni)
+        cmbBon['values'] = [False, True]
+        cmbBon.current(0)
+        cmbBon.place(x=520, y=280)
+
         ####################### Adjust Running Param Module#######################
 
         ####################### Run Module#######################
@@ -530,6 +555,97 @@ class SmashGui(Tk):
         btnRun.place(x=210, y=320)
 
         disable()
+
+    def createPredictWidgets(self):
+        #####################################################################
+        # Prediction
+        # Prediction
+        # Prediction
+        # Prediction
+        #####################################################################
+        def getFileName():
+            self.txtPredFile['state'] = 'normal'
+            self.txtPredFile.delete(0, tk.END)
+            self.predFileName = askopenfilename(
+                filetypes=(("csv file", "*.csv*"),
+                           ("Excel file", "*.xlsx*;*.xls*"),
+                           ("Text file", "*.txt*")))
+            if self.predFileName:
+                self.txtPredFile.insert(tk.END, self.predFileName)
+                data = self.readFile(self.predFileName, nrows=0)
+                self.predCols = list(data.columns)
+                self.cmbPredSmiles["values"] = self.predCols
+
+                self.cmbPredSmiles['state'] = 'readonly'
+            # else:
+            #     disable()
+            self.txtPredFile['state'] = 'readonly'
+
+        def getPvFileName():
+            self.txtPvFile['state'] = 'normal'
+            self.txtPvFile.delete(0, tk.END)
+            self.PvFileName = askopenfilename(
+                filetypes=(("csv file", "*.csv*"),
+                           ("Excel file", "*.xlsx*;*.xls*"),
+                           ("Text file", "*.txt*")))
+            if self.PvFileName:
+                self.txtPvFile.insert(tk.END, self.PvFileName)
+                data = self.readFile(self.PvFileName, nrows=0)
+                self.pvCols = list(data.columns)
+                self.cmbPvalue["values"] = self.pvCols
+
+                self.cmbPvalue['state'] = 'readonly'
+            # else:
+            #     disable()
+            self.txtPvFile['state'] = 'readonly'
+
+        color = '#ffab66'
+        bbg = Label(self.predTab, bg=color,
+                    width=500, height=4)
+        bbg.place(x=0, y=0)
+
+        lblPredFile = Label(self.predTab, text='>>> Select the file and SMILES field',
+                            font=self.lblFont, bg=color,
+                            fg='#b70131')
+        lblPredFile.place(x=0, y=10)
+
+        self.txtPredFile = Entry(self.predTab, width=50)
+        self.txtPredFile.place(x=7, y=35)
+        self.txtPredFile['state'] = 'readonly'
+
+        btnGetPredFile = Button(self.predTab, text='Browse...',
+                                command=getFileName,
+                                bg='#66baff',
+                                width=7)
+        btnGetPredFile.place(x=365, y=30)
+
+        self.cmbPredSmiles = ttk.Combobox(self.predTab, width=12)
+        self.cmbPredSmiles.place(x=450, y=30)
+        self.cmbPredSmiles['state'] = 'disable'
+
+        color = '#ffb97f'
+        bbg = Label(self.predTab, bg=color,
+                    width=500, height=4)
+        bbg.place(x=0, y=74)
+
+        lblPvFile = Label(self.predTab, text='>>> Select the p-Value file and related field',
+                          font=self.lblFont, bg=color,
+                          fg='#b70131')
+        lblPvFile.place(x=0, y=74)
+
+        self.txtPvFile = Entry(self.predTab, width=50)
+        self.txtPvFile.place(x=7, y=110)
+        self.txtPvFile['state'] = 'readonly'
+
+        btnGetPvFile = Button(self.predTab, text='Browse...',
+                              command=getPvFileName,
+                              bg='#66baff',
+                              width=7)
+        btnGetPvFile.place(x=365, y=110)
+
+        self.cmbPvalue = ttk.Combobox(self.predTab, width=12)
+        self.cmbPvalue.place(x=450, y=110)
+        self.cmbPvalue['state'] = 'disable'
 
 
 if '__main__' == __name__:
