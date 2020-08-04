@@ -35,8 +35,7 @@ class Circular(object):
     def __init__(self,
                  maxRadius=2, minRadius=1,
                  nBits=1024, folded=False,
-                 maxFragment=True, svg=False, 
-                 nJobs=1):
+                 maxFragment=True, nJobs=1):
         """
         Init
 
@@ -72,9 +71,10 @@ class Circular(object):
         self.minRadius = minRadius
         self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
-        self.svg = svg
+        self.substructure = pd.DataFrame()
+        self.matrix = pd.DataFrame()
 
-    def GetCircularFragmentLib(self, mols):
+    def GetCircularFragmentLib(self, mols, svg=False):
         """
         Calculate morgan fingerprint and return the info of NonzeroElements
 
@@ -90,8 +90,8 @@ class Circular(object):
                        nBits=self.nBits,
                        folded=self.folded,
                        maxFragment=self.maxFragment,
-                       svg=self.svg)
-        
+                       svg=svg)
+
         mols = mols if isinstance(mols, Iterable) else (mols, )
 
         pool = Pool(self.nJobs)
@@ -102,7 +102,7 @@ class Circular(object):
         self.fragments = fragments
         return fragments
 
-    def GetCircularMatrix(self, mols):
+    def GetCircularMatrix(self, mols, svg=False):
         """return circular matrix
 
         Returns
@@ -111,7 +111,7 @@ class Circular(object):
             the fragment matrix of molecules
 
         """
-        fragments = self.GetCircularFragmentLib(mols)
+        fragments = self.GetCircularFragmentLib(mols, svg=svg)
         # pool.close()
         # pool.join()
 
@@ -127,15 +127,23 @@ class Circular(object):
             for frag in unique:
                 if frag in info[0]:
                     arr[dic[frag]] = 1
+                    # if frag not in self.substructure:
+                        # self.substructure[frag] = {'SMARTS': info[1][0], 'SVG': info[1][1]} \
+                        #     if svg else {'SMARTS': info[1]}
 
-        # colDict = ChainMap(*[info[1] for info in bitInfo])
-        matrix = pd.DataFrame(matrix, columns=unique)
-        return matrix
+                        # colDict = ChainMap(*[info[1] for info in bitInfo])
+        self.matrix = pd.DataFrame(matrix, columns=unique)
+        fragments = pd.DataFrame(fragments)
+        substructure = {k:v for item in fragments[1].values for k,v in item.items()}
+        self.substructure = pd.DataFrame(substructure).T
+        self.substructure.columns = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        
+        return self.matrix
 
 
 class Path(object):
 
-    def __init__(self, mols,
+    def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
                  nJobs=1, maxFragment=True):
@@ -165,7 +173,6 @@ class Path(object):
         None.
 
         """
-        self.mols = mols if isinstance(mols, Iterable) else (mols,)
         self.minPath = minPath
         self.maxPath = maxPath
         self.nBits = nBits if folded else None
@@ -173,7 +180,7 @@ class Path(object):
         self.nJobs = nJobs if nJobs >= 1 else None
         self.maxFragment = maxFragment
 
-    def GetPathFragmentLib(self):
+    def GetPathFragmentLib(self, mols):
         """return the info of path bit info
 
         Returns
@@ -183,6 +190,7 @@ class Path(object):
             the second is bit info.
 
         """
+        mols = mols if isinstance(mols, Iterable) else (mols,)
         func = partial(GetPathFragment,
                        minPath=self.minPath,
                        maxPath=self.maxPath,
@@ -191,16 +199,16 @@ class Path(object):
                        maxFragment=self.maxFragment)
 
         pool = Pool(self.nJobs)
-        bitInfo = pool.map_async(func, self.mols).get()
+        bitInfo = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
 
         self.bitInfo = bitInfo
         return bitInfo
 
-    def GetPathMatrix(self):
+    def GetPathMatrix(self, mols):
 
-        bitInfo = self.GetPathFragmentLib()
+        bitInfo = self.GetPathFragmentLib(mols)
         # pool.close()
         # pool.join()
 
@@ -209,7 +217,7 @@ class Path(object):
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
+        matrix = np.zeros((len(mols), num), dtype=np.int8)
 
         for idx, arr in enumerate(matrix):
             info = bitInfo[idx]
@@ -285,20 +293,19 @@ if '__main__' == __name__:
         'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
         'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
         'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
-        ]
+    ]
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    circular = Circular(folded=False, maxRadius=3,
-                        minRadius=1, maxFragment=True,
-                        svg=True)
-    circular_matrix = circular.GetCircularMatrix(mols)
-    print(circular_matrix)
+    # circular = Circular(folded=False, maxRadius=3,
+    #                     minRadius=1, maxFragment=True)
+    # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
+    # print(circular_matrix)
     # circular_matrix.insert(0, 'SMILES', smis)
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
-    # path = Path(mols, folded=False, maxFragment=True)
-    # path_frag = path.GetPathFragmentLib()
+    path = Path(minPath=1, maxPath=3)
+    path_frag = path.GetPathFragmentLib(mols)
     # print(path_frag[0])
     # path_matrix = path.GetPathMatrix()
     # print(path_matrix.shape)

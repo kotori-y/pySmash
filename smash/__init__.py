@@ -171,10 +171,11 @@ class CircularLearner(Circular):
     def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
-            accuracy=None, Bonferroni=False):
+            accuracy=None, Bonferroni=False, 
+            svg=True):
         """
         """
-        matrix = self.GetCircularMatrix(mols)
+        matrix = self.GetCircularMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -211,14 +212,16 @@ class CircularLearner(Circular):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-
+        
+        self.substructure = self.substructure.reindex(meanPvalue.index)
+        meanPvalue = pd.concat((meanPvalue, self.substructure), axis=1, sort=False)
         self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
         return self
 
     def predict(self, mols):
         if self.meanPvalue is None or self.meanMatrix is None:
-           raise NotFittedError(
-               "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
+            raise NotFittedError(
+                "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
         predMatrix = self.GetCircularMatrix(mols)
         cols = set(predMatrix.columns) & set(self.meanPvalue.index)
@@ -226,42 +229,28 @@ class CircularLearner(Circular):
         y_pred = (predMatrix.sum(axis=1) > 0) + 0
 
         return y_pred.values, predMatrix
-        
 
 
-        # pValue = mp.Manager().dict()
-        # pool = mp.Pool(self.nJobs)
-        # for col, val in matrix.iteritems():
-        #     pool.apply_async(self.Pvalue,
-        #                      args=(n, m,
-        #                            col, val,
-        #                            aimLabel, pValue
-        #                            )
-        #                      )
-        # pool.close()
-        # pool.join()
-        # return res
+class PathLeanrner(Path):
 
-
-class MeaningfulPath(Path):
-
-    def __init__(self, mols,
+    def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
                  nJobs=1, maxFragment=True):
         """
         """
-        Path.__init__(self, mols,
+        Path.__init__(self,
                       minPath, maxPath,
                       nBits, folded, nJobs,
                       maxFragment)
 
-    def GetMeaningfulPathMatrix(self, labels, aimLabel=1,
-                                minNum=5, pThreshold=0.05,
-                                accuracy=0.70):
+    def fit(self, mols, 
+            labels, aimLabel=1,
+            minNum=5, pThreshold=0.05,
+            accuracy=0.70):
         """
         """
-        matrix = self.GetPathMatrix()
+        matrix = self.GetPathMatrix(mols)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -292,7 +281,21 @@ class MeaningfulPath(Path):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-        return meanPvalue, meanMatrix
+
+        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
+        return self
+
+    def predict(self, mols):
+        if self.meanPvalue is None or self.meanMatrix is None:
+            raise NotFittedError(
+                "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
+
+        predMatrix = self.GetCircularMatrix(mols)
+        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
+        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
+        y_pred = (predMatrix.sum(axis=1) > 0) + 0
+
+        return y_pred.values, predMatrix
 
 
 class MeaningfulFunctionGroup(FunctionGroup):
@@ -356,16 +359,15 @@ if '__main__' == __name__:
                                maxFragment=True, nJobs=4)
 
     circular.fit(mols, y_true)
-    y_pred, predMatrix = circular.predict(mols)
-    print(y_pred)
-    # print(circular.meanPvalue.shape)
+    # y_pred, predMatrix = circular.predict(mols)
+    # print(y_pred)
+    print(circular.meanPvalue)
 
-    # path = MeaningfulPath(mols, minPath=1,
-    #                       maxPath=7, nJobs=4,
-    #                       maxFragment=True)
-
-    # meanPvalue, meanMatrix = path.GetMeaningfulPathMatrix(y_true)
-    # print(meanMatrix)
+    # path = PathLeanrner(minPath=1,
+    #                     maxPath=7, nJobs=4,
+    #                     maxFragment=True)
+    # path.fit(mols, y_true)
+    # print(len(path.meanPvalue))
 
     # mfg = MeaningfulFunctionGroup(mols, nJobs=4)
 

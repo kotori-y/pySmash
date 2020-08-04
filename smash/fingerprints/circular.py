@@ -62,7 +62,7 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=True, svg=Fal
 
         if r >= minRadius:
             smi, svgImg = DrawMorganEnv(mol, a, r)
-            fragments[idx] = (smi, svgImg) if svg else smi
+            fragments[idx] = (smi, svgImg.replace('\n','')) if svg else smi
         else:
             pass
 
@@ -208,7 +208,7 @@ if '__main__' == __name__:
 
     fragments = GetCircularFragment(
         mol, maxRadius=3, minRadius=1, maxFragment=False, svg=True)
-    print(fragments[1].keys())
+    print(fragments[1])
 
 
 
