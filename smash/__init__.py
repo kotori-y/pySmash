@@ -247,10 +247,10 @@ class PathLeanrner(Path):
     def fit(self, mols, 
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
-            accuracy=0.70):
+            accuracy=0.70, svg=True):
         """
         """
-        matrix = self.GetPathMatrix(mols)
+        matrix = self.GetPathMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -282,6 +282,8 @@ class PathLeanrner(Path):
         else:
             pass
 
+        self.substructure = self.substructure.reindex(meanPvalue.index)
+        meanPvalue = pd.concat((meanPvalue, self.substructure), axis=1, sort=False)
         self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
         return self
 
@@ -347,7 +349,7 @@ if '__main__' == __name__:
     from itertools import compress
 
     data = pd.read_csv(r'tests\Canc\Canc.txt', sep='\t')
-    # data = data.sample(n=100)
+    data = data.sample(n=100)
 
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     bo = mols.notna().values
@@ -355,19 +357,19 @@ if '__main__' == __name__:
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
-    circular = CircularLearner(minRadius=1, maxRadius=6,
-                               maxFragment=True, nJobs=4)
+    # circular = CircularLearner(minRadius=1, maxRadius=6,
+    #                            maxFragment=True, nJobs=4)
 
-    circular.fit(mols, y_true)
-    # y_pred, predMatrix = circular.predict(mols)
-    # print(y_pred)
-    print(circular.meanPvalue)
+    # circular.fit(mols, y_true)
+    # # y_pred, predMatrix = circular.predict(mols)
+    # # print(y_pred)
+    # print(circular.meanPvalue)
 
-    # path = PathLeanrner(minPath=1,
-    #                     maxPath=7, nJobs=4,
-    #                     maxFragment=True)
-    # path.fit(mols, y_true)
-    # print(len(path.meanPvalue))
+    path = PathLeanrner(minPath=1,
+                        maxPath=3, nJobs=4,
+                        maxFragment=True)
+    path.fit(mols, y_true, svg=True)
+    print(path.meanPvalue)
 
     # mfg = MeaningfulFunctionGroup(mols, nJobs=4)
 

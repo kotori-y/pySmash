@@ -179,8 +179,10 @@ class Path(object):
         self.folded = folded
         self.nJobs = nJobs if nJobs >= 1 else None
         self.maxFragment = maxFragment
+        self.substructure = pd.DataFrame()
+        self.matrix = pd.DataFrame()
 
-    def GetPathFragmentLib(self, mols):
+    def GetPathFragmentLib(self, mols, svg=False):
         """return the info of path bit info
 
         Returns
@@ -196,7 +198,8 @@ class Path(object):
                        maxPath=self.maxPath,
                        nBits=self.nBits,
                        folded=self.folded,
-                       maxFragment=self.maxFragment)
+                       maxFragment=self.maxFragment,
+                       svg=svg)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, mols).get()
@@ -206,13 +209,13 @@ class Path(object):
         self.bitInfo = bitInfo
         return bitInfo
 
-    def GetPathMatrix(self, mols):
+    def GetPathMatrix(self, mols, svg=False):
 
-        bitInfo = self.GetPathFragmentLib(mols)
+        fragments = self.GetPathFragmentLib(mols, svg=svg)
         # pool.close()
         # pool.join()
 
-        unique = [bit for info in bitInfo for bit in info[1]]
+        unique = [bit for info in fragments for bit in info[1]]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
@@ -220,14 +223,18 @@ class Path(object):
         matrix = np.zeros((len(mols), num), dtype=np.int8)
 
         for idx, arr in enumerate(matrix):
-            info = bitInfo[idx]
+            info = fragments[idx]
             for frag in unique:
                 if frag in info[0]:
                     arr[dic[frag]] = 1
 
-        # colDict = ChainMap(*[info[1] for info in bitInfo])
-        matrix = pd.DataFrame(matrix, columns=unique)
-        return matrix
+        self.matrix = pd.DataFrame(matrix, columns=unique)
+        fragments = pd.DataFrame(fragments)
+        substructure = {k:v for item in fragments[1].values for k,v in item.items()}
+        idx =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        self.substructure = pd.DataFrame(substructure, index=idx).T
+
+        return self.matrix
 
 
 class FunctionGroup(object):
@@ -305,8 +312,8 @@ if '__main__' == __name__:
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
     path = Path(minPath=1, maxPath=3)
-    path_frag = path.GetPathFragmentLib(mols)
-    # print(path_frag[0])
+    path_frag = path.GetPathMatrix(mols, svg=True)
+    print(path.substructure)
     # path_matrix = path.GetPathMatrix()
     # print(path_matrix.shape)
 

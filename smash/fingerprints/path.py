@@ -44,7 +44,7 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
         for k in bitInfo:
             bondPath = list(eval(k))
             smi, svgImg = DrawRDKitEnv(mol, bondPath)
-            fragments[dic[k]] = (smi, svgImg) if svg else smi
+            fragments[dic[k]] = (smi, svgImg.replace('\n','')) if svg else smi
     else:
         pass
 
