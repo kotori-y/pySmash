@@ -135,8 +135,8 @@ class Circular(object):
         self.matrix = pd.DataFrame(matrix, columns=unique)
         fragments = pd.DataFrame(fragments)
         substructure = {k:v for item in fragments[1].values for k,v in item.items()}
-        self.substructure = pd.DataFrame(substructure).T
-        self.substructure.columns = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        idx = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        self.substructure = pd.DataFrame(substructure, index=idx).T
         
         return self.matrix
 
