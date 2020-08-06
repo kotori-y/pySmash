@@ -106,6 +106,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-tests/*
+tests/ignore/*
 gui/data/*
 paper/*
