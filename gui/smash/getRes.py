@@ -22,6 +22,9 @@ import tkinter as tk
 import pandas as pd
 import numpy as np
 import time
+import bz2
+import pickle
+
 try:
     pd.set_option('display.max_colwidth', None)
 except:
@@ -192,3 +195,14 @@ def getFingerprintRes(textPad, data, **kwgrs):
     # ############# Calculate p-value #############
 
     return subMatrix, subPvalue
+
+
+
+
+def predict(modelFile, smis):
+
+    mols = list(map(lambda x: Chem.MolFromSmiles(x), smis))
+    model = bz2.BZ2File(modelFile, 'rb')
+    model = pickle.load(model)
+    y_pred, predMatrix = model.predict(mols)
+    return y_pred, predMatrix

@@ -61,7 +61,7 @@ if '__main__' == __name__:
     pd.set_option('display.max_colwidth', -1)
     circular.meanPvalue.to_html('out.html', escape=False)
     
-    y_pred, pred_matrix = circular.predict(mols)
+    # y_pred, pred_matrix = circular.predict(mols)
     
     
     

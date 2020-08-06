@@ -27,7 +27,7 @@ from tkinter.filedialog import asksaveasfilename
 from tkinter import messagebox
 
 import pandas as pd
-from getRes import getFingerprintRes
+from getRes import getFingerprintRes, predict
 from smash import ShowResult
 
 
@@ -269,6 +269,13 @@ class SmashGui(Tk):
 
         btnNext['state'] = 'normal'
 
+    def main_predict(self):
+
+        data = self.readFile(self.predFileName)
+        smis = data[self.cmbPredSmiles.get()].values
+        y_pred, predMatrix = predict(self.PvFileName, smis)
+        print(y_pred, predMatrix)
+
     def creatTab(self):
         tab_main = ttk.Notebook(self)
         tab_main.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
@@ -294,7 +301,7 @@ class SmashGui(Tk):
                 self.cmbLabel["values"] = self.cols
 
                 self.cmbSmiles['state'] = 'readonly'
-                # self.cmbLabel['state'], self.cmbAim['state'],\
+                # self.cmbLabel['state'], self.cmbAim['state'],
                 #     self.cmbFP['state'] = ['readonly']*4
             else:
                 disable()
@@ -581,23 +588,21 @@ class SmashGui(Tk):
             #     disable()
             self.txtPredFile['state'] = 'readonly'
 
-        def getPvFileName():
-            self.txtPvFile['state'] = 'normal'
-            self.txtPvFile.delete(0, tk.END)
-            self.PvFileName = askopenfilename(
-                filetypes=(("csv file", "*.csv*"),
-                           ("Excel file", "*.xlsx*;*.xls*"),
-                           ("Text file", "*.txt*")))
-            if self.PvFileName:
-                self.txtPvFile.insert(tk.END, self.PvFileName)
-                data = self.readFile(self.PvFileName, nrows=0)
-                self.pvCols = list(data.columns)
-                self.cmbPvalue["values"] = self.pvCols
+        def getModelFileName():
+            self.txtModelFile['state'] = 'normal'
+            self.txtModelFile.delete(0, tk.END)
+            self.modelFileName = askopenfilename(
+                filetypes=(("pbz2 file", "*.pbz2*"),))
+            if self.modelFileName:
+                self.txtModelFile.insert(tk.END, self.modelFileName)
+                # data = self.readFile(self.PvFileName, nrows=0)
+                # self.pvCols = list(data.columns)
+                # self.cmbPvalue["values"] = self.pvCols
 
-                self.cmbPvalue['state'] = 'readonly'
+                # self.cmbPvalue['state'] = 'readonly'
             # else:
             #     disable()
-            self.txtPvFile['state'] = 'readonly'
+            self.txtModelFile['state'] = 'readonly'
 
         color = '#ffab66'
         bbg = Label(self.predTab, bg=color,
@@ -628,27 +633,40 @@ class SmashGui(Tk):
                     width=500, height=4)
         bbg.place(x=0, y=74)
 
-        lblPvFile = Label(self.predTab, text='>>> Select the p-Value file and related field',
-                          font=self.lblFont, bg=color,
-                          fg='#b70131')
-        lblPvFile.place(x=0, y=74)
+        lblModelFile = Label(self.predTab, text='>>> Select the model file',
+                             font=self.lblFont, bg=color,
+                             fg='#b70131')
+        lblModelFile.place(x=0, y=74)
 
-        self.txtPvFile = Entry(self.predTab, width=50)
-        self.txtPvFile.place(x=7, y=110)
-        self.txtPvFile['state'] = 'readonly'
+        self.txtModelFile = Entry(self.predTab, width=50)
+        self.txtModelFile.place(x=7, y=110)
+        self.txtModelFile['state'] = 'readonly'
 
-        btnGetPvFile = Button(self.predTab, text='Browse...',
-                              command=getPvFileName,
-                              bg='#66baff',
-                              width=7)
-        btnGetPvFile.place(x=365, y=110)
+        btnGetModelFile = Button(self.predTab, text='Browse...',
+                                 command=getModelFileName,
+                                 bg='#66baff',
+                                 width=7)
+        btnGetModelFile.place(x=365, y=110)
 
-        self.cmbPvalue = ttk.Combobox(self.predTab, width=12)
-        self.cmbPvalue.place(x=450, y=110)
-        self.cmbPvalue['state'] = 'disable'
+        # self.cmbPvalue = ttk.Combobox(self.predTab, width=12)
+        # self.cmbPvalue.place(x=450, y=110)
+        # self.cmbPvalue['state'] = 'disable'
+
+        color = '#ffd5b2'
+        bbg = Label(self.predTab, bg=color,
+                    width=500, height=4)
+        bbg.place(x=0, y=147)
+
+        btnPredict = Button(self.predTab, text='Predict',
+                            command=lambda: self.main_thread(
+                                self.main_predict),
+                            bg='#66baff',
+                            width=7)
+        btnPredict.place(x=250, y=165)
 
 
 if '__main__' == __name__:
+
     mp.freeze_support()
     gui = SmashGui()
     gui.mainloop()
