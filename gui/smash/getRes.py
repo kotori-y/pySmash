@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import Circular, Path, FunctionGroup, Pvalue
+from smash import CircularLearner, Path, FunctionGroup, Pvalue
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -70,6 +70,7 @@ def getFingerprintRes(textPad, data, **kwgrs):
         textPad['state'] = 'disable'
 
     ############# Load file #############
+    print(kwgrs)
     smiles_field = kwgrs.get('smiles_field')
     label_field = kwgrs.get('label_field')
     fingerprint = kwgrs.get('fingerprint')
@@ -107,15 +108,16 @@ def getFingerprintRes(textPad, data, **kwgrs):
     ############# Trans smiles to mol #############
 
     ############# Obtain Fingerprint Matrix #############
-    add('Obtain Fingerprint Matrix... ')
+    add('Obtain Significant Fragments... ')
     if fingerprint == 'Circular':
-        circular = Circular(maxRadius=kwgrs.get('radius'),
-                            minRadius=kwgrs.get('minRadius'),
-                            folded=kwgrs.get('folded'),
-                            # nBits=kwgrs.get('nBits'),
-                            maxFragment=True,
-                            nJobs=n_jobs)
-        subMatrix = circular.GetCircularMatrix(mols)
+        model = CircularLearner(maxRadius=kwgrs.get('radius'),
+                                minRadius=kwgrs.get('minRadius'),
+                                folded=kwgrs.get('folded'),
+                                maxFragment=True,
+                                nJobs=n_jobs)
+        model.fit(mols, labels,
+                  aimLabel=aimLabel, minNum=minNum, pThreshold=pValue,
+                  accuracy=accuracy, Bonferroni=Bonferroni,)
 
     elif fingerprint == 'Path':
         path = Path(mols,
@@ -130,63 +132,63 @@ def getFingerprintRes(textPad, data, **kwgrs):
         fg = FunctionGroup(mols, nJobs=n_jobs)
         subMatrix = fg.GetFunctionGroupsMatrix()
         # print(subMatrix)
+    subPvalue, subMatrix = model.meanPvalue, model.meanMatrix
     add('Successed!\n\n')
     ############# Obtain Fingerprint Matrix #############
 
     ############# Disposed with run param #############
-    add('Disposed with run param... ')
-    subMatrix = subMatrix.loc[:, subMatrix.sum(axis=0) >= minNum]
-    subMatrix.to_csv(r"C:\Users\0720\Desktop\MATE\lzz\subMatrix.txt", sep='\t')
+    add('Disposed with minRatio... ')
     bo = (subMatrix[labels == aimLabel].sum(
         axis=0)/subMatrix.sum(axis=0)) >= minRatio
     subMatrix = subMatrix.loc[:, bo.values]
+    subPvalue = subPvalue.reindex(subMatrix.columns)
     # print(subMatrix)
     # subMatrix['SMILES'] = smis
     add('Successed!\n\n')
     ############# Disposed with run param #############
 
-    ############# Calculate p-value #############
-    add('Calculate p-Value... ')
-    n = len(labels)
-    m = sum(labels == aimLabel)
+    # ############# Calculate p-value #############
+    # add('Calculate p-Value... ')
+    # n = len(labels)
+    # m = sum(labels == aimLabel)
 
-    subPvalue = mp.Manager().dict()
-    pool = mp.Pool(n_jobs)
-    for name, val in subMatrix.iteritems():
-        ns = sum(val)
-        ms = sum(val == aimLabel)
-        pool.apply_async(CalculatePvalue, args=(n, m, ns, ms, name, subPvalue))
-    pool.close()
-    pool.join()
+    # subPvalue = mp.Manager().dict()
+    # pool = mp.Pool(n_jobs)
+    # for name, val in subMatrix.iteritems():
+    #     ns = sum(val)
+    #     ms = sum(val == aimLabel)
+    #     pool.apply_async(CalculatePvalue, args=(n, m, ns, ms, name, subPvalue))
+    # pool.close()
+    # pool.join()
 
-    subPvalue = pd.DataFrame(dict(subPvalue), index=['Pvalue']).T
-    # subPvalue = subPvalue[subPvalue['Pvalue'] <= pValue]
+    # subPvalue = pd.DataFrame(dict(subPvalue), index=['Pvalue']).T
+    # # subPvalue = subPvalue[subPvalue['Pvalue'] <= pValue]
 
-    if Bonferroni:
-        subPvalue['Pvalue'] = subPvalue.Pvalue.values * len(subPvalue)
-        subPvalue = subPvalue[subPvalue.Pvalue <= pValue]
-    else:
-        pass
+    # if Bonferroni:
+    #     subPvalue['Pvalue'] = subPvalue.Pvalue.values * len(subPvalue)
+    #     subPvalue = subPvalue[subPvalue.Pvalue <= pValue]
+    # else:
+    #     pass
 
-    subMatrix = subMatrix.reindex(subMatrix.index, axis=0)
-    # print(subMatrix)
-    subPvalue['Total'] = subMatrix.sum(axis=0)
-    subPvalue['Hitted'] = subMatrix[labels == 1].sum(axis=0)
-    subPvalue['Accuracy'] = subPvalue.Hitted/subPvalue.Total
-    subPvalue['Coverage'] = subPvalue['Hitted']/m
+    # subMatrix = subMatrix.reindex(subMatrix.index, axis=0)
+    # # print(subMatrix)
+    # subPvalue['Total'] = subMatrix.sum(axis=0)
+    # subPvalue['Hitted'] = subMatrix[labels == 1].sum(axis=0)
+    # subPvalue['Accuracy'] = subPvalue.Hitted/subPvalue.Total
+    # subPvalue['Coverage'] = subPvalue['Hitted']/m
 
-    if accuracy is not None:
-        subPvalue = subPvalue[subPvalue.Accuracy >= accuracy]
-        subMatrix = subMatrix.reindex(subPvalue.index, axis=0)
-    else:
-        pass
+    # if accuracy is not None:
+    #     subPvalue = subPvalue[subPvalue.Accuracy >= accuracy]
+    #     subMatrix = subMatrix.reindex(subPvalue.index, axis=0)
+    # else:
+    #     pass
 
-    # print(subPvalue)
-    subMatrix = subMatrix.loc[:, subPvalue.index]
+    # # print(subPvalue)
+    # subMatrix = subMatrix.loc[:, subPvalue.index]
 
-    subMatrix['SMILES'] = smis
-    subMatrix['Label'] = labels.values
-    add('Successed!\n\n')
-    ############# Calculate p-value #############
+    # subMatrix['SMILES'] = smis
+    # subMatrix['Label'] = labels.values
+    # add('Successed!\n\n')
+    # ############# Calculate p-value #############
 
     return subMatrix, subPvalue
