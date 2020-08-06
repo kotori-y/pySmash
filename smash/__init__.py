@@ -171,7 +171,7 @@ class CircularLearner(Circular):
     def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
-            accuracy=None, Bonferroni=False, 
+            accuracy=None, Bonferroni=False,
             svg=True):
         """
         """
@@ -212,9 +212,10 @@ class CircularLearner(Circular):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-        
+
         self.substructure = self.substructure.reindex(meanPvalue.index)
-        meanPvalue = pd.concat((meanPvalue, self.substructure), axis=1, sort=False)
+        meanPvalue = pd.concat(
+            (meanPvalue, self.substructure), axis=1, sort=False)
         self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
         return self
 
@@ -244,7 +245,7 @@ class PathLeanrner(Path):
                       nBits, folded, nJobs,
                       maxFragment)
 
-    def fit(self, mols, 
+    def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
             accuracy=0.70, svg=True):
@@ -283,7 +284,8 @@ class PathLeanrner(Path):
             pass
 
         self.substructure = self.substructure.reindex(meanPvalue.index)
-        meanPvalue = pd.concat((meanPvalue, self.substructure), axis=1, sort=False)
+        meanPvalue = pd.concat(
+            (meanPvalue, self.substructure), axis=1, sort=False)
         self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
         return self
 
@@ -300,17 +302,18 @@ class PathLeanrner(Path):
         return y_pred.values, predMatrix
 
 
-class MeaningfulFunctionGroup(FunctionGroup):
+class FunctionGroupLearner(FunctionGroup):
 
-    def __init__(self, mols, nJobs=1):
+    def __init__(self, nJobs=1):
 
-        FunctionGroup.__init__(self, mols, nJobs)
+        FunctionGroup.__init__(self, nJobs)
 
-    def GetMeaningfulFGMatrix(self, labels, aimLabel=1,
-                              minNum=5, pThreshold=0.05,
-                              accuracy=0.70):
+    def fit(self, mols, 
+            labels, aimLabel=1,
+            minNum=5, pThreshold=0.05,
+            accuracy=0.70, svg=True):
 
-        matrix = self.GetFunctionGroupsMatrix()
+        matrix = self.GetFunctionGroupsMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -341,7 +344,11 @@ class MeaningfulFunctionGroup(FunctionGroup):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-        return meanPvalue, meanMatrix
+
+        meanPvalue = pd.concat(
+            (meanPvalue, self.substructure), axis=1, sort=False)
+        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
+        return self
 
 
 if '__main__' == __name__:
@@ -365,13 +372,13 @@ if '__main__' == __name__:
     # # print(y_pred)
     # print(circular.meanPvalue)
 
-    path = PathLeanrner(minPath=1,
-                        maxPath=3, nJobs=4,
-                        maxFragment=True)
-    path.fit(mols, y_true, svg=True)
-    print(path.meanPvalue)
+    # path = PathLeanrner(minPath=1,
+    #                     maxPath=3, nJobs=4,
+    #                     maxFragment=True)
+    # path.fit(mols, y_true, svg=True)
+    # print(path.)
 
-    # mfg = MeaningfulFunctionGroup(mols, nJobs=4)
+    fg = FunctionGroupLearner(nJobs=4)
 
-    # meanPvalue, meanMatrix = mfg.GetMeaningfulFGMatrix(y_true)
-    # print(meanMatrix)
+    fg.fit(mols, y_true)
+    print(fg.meanPvalue)

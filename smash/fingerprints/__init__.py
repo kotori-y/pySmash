@@ -239,7 +239,7 @@ class Path(object):
 
 class FunctionGroup(object):
 
-    def __init__(self, mols, nJobs=1):
+    def __init__(self, nJobs=1):
         """Init
 
         Parameters
@@ -247,40 +247,47 @@ class FunctionGroup(object):
         mols : a list of rdkit.Chem.rdchem.Mol
             the aim molecule library.
         """
-        self.mols = mols
         self.nJobs = nJobs
         self.fgs = None
+        self.substructure = pd.DataFrame()
+        self.matrix = pd.DataFrame()
 
-    def GetFunctionGroups(self):
+    def GetFunctionGroupFragmentLib(self, mols, svg=False):
 
+        mols = mols if isinstance(mols, Iterable) else (mols,)
+        func = partial(GetFunctionGroupFragment, svg=svg)
         pool = Pool(self.nJobs)
-        self.fgs = pool.map_async(GetFunctionGroupFragment, self.mols).get()
+        self.fgs = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
-
         return self.fgs
 
-    def GetFunctionGroupsMatrix(self):
+    def GetFunctionGroupsMatrix(self, mols, svg=False):
 
         if not self.fgs:
-            fgs = self.GetFunctionGroups()
+            fgs = self.GetFunctionGroupFragmentLib(mols, svg)
         else:
-            pass
+            fgs = self.fgs
 
-        unique = [x for fg in fgs for x in fg]
+        unique = [x[0] for fg in fgs for x in fg]
         unique = list(set(unique))
         dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
-        matrix = np.zeros((len(self.mols), num), dtype=np.int8)
+        matrix = np.zeros((len(mols), num), dtype=np.int8)
 
         for idx, arr in enumerate(matrix):
             fg = fgs[idx]
             for item in fg:
-                arr[dic[item]] = 1
+                arr[dic[item[0]]] = 1
 
-        matrix = pd.DataFrame(matrix, columns=unique)
-        return matrix
+        self.matrix = pd.DataFrame(matrix, columns=unique)
+        cols =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        self.substructure = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
+        self.substructure = self.substructure.drop_duplicates(['SMARTS']).reset_index(drop=True)
+        self.matrix = self.matrix.reindex(self.substructure.SMARTS.values, axis=1)
+
+        return self.matrix
 
 
 if '__main__' == __name__:
@@ -311,11 +318,12 @@ if '__main__' == __name__:
     # circular_matrix.insert(0, 'SMILES', smis)
     # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
 
-    path = Path(minPath=1, maxPath=3)
-    path_frag = path.GetPathMatrix(mols, svg=True)
-    print(path.substructure)
+    # path = Path(minPath=1, maxPath=3)
+    # path_frag = path.GetPathMatrix(mols, svg=True)
+    # print(path.substructure)
     # path_matrix = path.GetPathMatrix()
     # print(path_matrix.shape)
 
-    # fg = FunctionGroup(mols)
-    # print(fg.GetFunctionGroupsMatrix())
+    funcgroup = FunctionGroup()
+    print(funcgroup.GetFunctionGroupsMatrix(mols, svg=True))
+    print(funcgroup.substructure)
