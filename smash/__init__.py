@@ -148,8 +148,7 @@ def ShowResult(subMatrix, subPvalue, label_field='Label',
                         'Accuracy': acc,
                         'Substructure': imgs})
     return out
-    # pd.set_option('display.max_colwidth', -1)
-    # out.to_html('out_html.html', escape=False)
+    
 
 
 class CircularLearner(Circular):
@@ -314,7 +313,6 @@ class FunctionGroupLearner(FunctionGroup):
             accuracy=0.70, svg=True):
 
         matrix = self.GetFunctionGroupsMatrix(mols, svg=svg)
-
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
 
@@ -339,16 +337,31 @@ class FunctionGroupLearner(FunctionGroup):
         meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
         meanPvalue['Coverage'] = meanPvalue['Hitted']/m
 
-        if accuracy is not None:
+        if accuracy:
             meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
+        
+        self.substructure = self.substructure.reindex(meanPvalue.index)
 
         meanPvalue = pd.concat(
             (meanPvalue, self.substructure), axis=1, sort=False)
         self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
         return self
+
+    def predict(self, mols):
+        if self.meanPvalue is None or self.meanMatrix is None:
+            raise NotFittedError(
+                "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
+
+        predMatrix = self.GetFunctionGroupsMatrix(mols, svg=True)
+        
+        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
+        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
+        y_pred = (predMatrix.sum(axis=1) > 0) + 0
+
+        return y_pred.values, predMatrix
 
 
 if '__main__' == __name__:
@@ -356,7 +369,7 @@ if '__main__' == __name__:
     from itertools import compress
 
     data = pd.read_csv(r'tests\Canc\Canc.txt', sep='\t')
-    data = data.sample(n=100)
+    # data = data.sample(n=100)
 
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     bo = mols.notna().values
@@ -381,4 +394,5 @@ if '__main__' == __name__:
     fg = FunctionGroupLearner(nJobs=4)
 
     fg.fit(mols, y_true)
-    print(fg.meanPvalue)
+    print(fg.predict(mols)[0])
+    print('Done !!!')

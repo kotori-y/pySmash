@@ -42,17 +42,20 @@ def _DisposedFgFragment(mol, subMol, molSize=(150, 150)):
         rdDepictor.Compute2DCoords(mol)
 
     subMolDic[subMol] = Chem.MolFromSmarts(subMol)
-    atomToUsed = mol.GetSubstructMatch(subMolDic[subMol])
-    amap = {}
-    submol = Chem.PathToSubmol(mol, atomToUsed, atomMap=amap)
+    try:
+        atomToUsed = mol.GetSubstructMatch(subMolDic[subMol])
+        amap = {}
+        submol = Chem.PathToSubmol(mol, atomToUsed, atomMap=amap)
 
-    Chem.FastFindRings(submol)
-    conf = Chem.Conformer(submol.GetNumAtoms())
-    confOri = mol.GetConformer(0)
-    for i1, i2 in amap.items():
-        conf.SetAtomPosition(i2, confOri.GetAtomPosition(i1))
-    submol.AddConformer(conf)
-
+        Chem.FastFindRings(submol)
+        conf = Chem.Conformer(submol.GetNumAtoms())
+        confOri = mol.GetConformer(0)
+        for i1, i2 in amap.items():
+            conf.SetAtomPosition(i2, confOri.GetAtomPosition(i1))
+        submol.AddConformer(conf)
+    except:
+        submol = mol
+        
     drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
     drawopt = drawer.drawOptions()
     drawopt.continuousHighlight = False

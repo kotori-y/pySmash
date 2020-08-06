@@ -284,7 +284,7 @@ class FunctionGroup(object):
         self.matrix = pd.DataFrame(matrix, columns=unique)
         cols =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
         self.substructure = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
-        self.substructure = self.substructure.drop_duplicates(['SMARTS']).reset_index(drop=True)
+        self.substructure = self.substructure.drop_duplicates(['SMARTS']).set_index('SMARTS', drop=False)
         self.matrix = self.matrix.reindex(self.substructure.SMARTS.values, axis=1)
 
         return self.matrix
@@ -325,5 +325,5 @@ if '__main__' == __name__:
     # print(path_matrix.shape)
 
     funcgroup = FunctionGroup()
-    print(funcgroup.GetFunctionGroupsMatrix(mols, svg=True))
+    print(funcgroup.GetFunctionGroupsMatrix(mols, svg=False))
     print(funcgroup.substructure)
