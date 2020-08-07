@@ -194,7 +194,7 @@ def getFingerprintRes(textPad, data, **kwgrs):
     # add('Successed!\n\n')
     # ############# Calculate p-value #############
 
-    return subMatrix, subPvalue
+    return model, subMatrix, subPvalue
 
 
 

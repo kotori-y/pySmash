@@ -19,6 +19,8 @@ import os
 import pandas as pd
 import numpy as np
 import scipy as sc
+import bz2
+import _pickle as cPickle
 
 from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
@@ -255,6 +257,11 @@ class CircularLearner(Circular):
         f.close()
         return html
 
+    def saveModel(self, file):
+
+        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
+            cPickle.dump(self, f)
+        f.close()
 
 
 class PathLeanrner(Path):
@@ -345,6 +352,11 @@ class PathLeanrner(Path):
         f.close()
         return html
 
+    def saveModel(self, file):
+
+        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
+            cPickle.dump(self, f)
+        f.close()
 class FunctionGroupLearner(FunctionGroup):
 
     def __init__(self, nJobs=1):
@@ -426,7 +438,12 @@ class FunctionGroupLearner(FunctionGroup):
         f.close()
         return html
 
-        
+    def saveModel(self, file):
+
+        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
+            cPickle.dump(self, f)
+        f.close()
+
 if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress

@@ -102,7 +102,7 @@ class SmashGui(Tk):
                 filetypes=(("Html file", "*.html*"), ))
             if savefile:
                 try:
-                    data.to_html(savefile, **kwgrs)
+                    self.model.savePvalue(savefile)
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
@@ -181,7 +181,7 @@ class SmashGui(Tk):
                                    font=('Times New Roman', 12),
                                    width=8,
                                    command=lambda: self.downloadRes(
-                                       data=self.subPvalue, datype='html', escape=False))
+                                       data=None, datype='html'))
         btnDownloadPvalue.place(x=400, y=120)
 
         btnPreviewHTML = Button(self.view, text='Preview',
@@ -263,8 +263,7 @@ class SmashGui(Tk):
         add('Load file... ')
         data = self.readFile(self.filename)
 
-        self.subMatrix, self.subPvalue = getFingerprintRes(textPad,
-                                                           data, **kwgrs)
+        self.model, self.subMatrix, self.subPvalue = getFingerprintRes(textPad, data, **kwgrs)
         time.sleep(1)
         add('\nFinished!')
 
