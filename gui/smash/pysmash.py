@@ -102,7 +102,7 @@ class SmashGui(Tk):
                 filetypes=(("Html file", "*.html*"), ))
             if savefile:
                 try:
-                    self.html.to_html(savefile, **kwgrs)
+                    data.to_html(savefile, **kwgrs)
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
@@ -118,17 +118,18 @@ class SmashGui(Tk):
                 max_cols=10, justify='center'))
             self.previewPad['state'] = 'disabled'
         else:
-            try:
-                aimLabel = float(self.cmbAim.get())
-            except:
-                pass
-            self.html = ShowResult(self.subMatrix, self.subPvalue,
-                                   smarts_field=None, aim_label=aimLabel,
-                                   topx=display)
+            # try:
+            #     aimLabel = float(self.cmbAim.get())
+            # except:
+            #     pass
+            # self.html = ShowResult(self.subMatrix, self.subPvalue,
+            #                        smarts_field=None, aim_label=aimLabel,
+            #                        topx=display)
 
-            self.previewPad.insert(
-                tk.END, self.html.iloc[:, :-1].to_string(max_cols=10, justify='center'))
-            self.previewPad['state'] = 'disabled'
+            # self.previewPad.insert(
+            #     tk.END, self.html.iloc[:, :-1].to_string(max_cols=10, justify='center'))
+            # self.previewPad['state'] = 'disabled'
+            pass
 
     def preview(self):
 
@@ -180,7 +181,7 @@ class SmashGui(Tk):
                                    font=('Times New Roman', 12),
                                    width=8,
                                    command=lambda: self.downloadRes(
-                                       data=self.subPvalue, datype='df', index_label='SMARTS'))
+                                       data=self.subPvalue, datype='html', escape=False))
         btnDownloadPvalue.place(x=400, y=120)
 
         btnPreviewHTML = Button(self.view, text='Preview',
@@ -638,7 +639,7 @@ class SmashGui(Tk):
                              fg='#b70131')
         lblModelFile.place(x=0, y=74)
 
-        self.txtModelFile = Entry(self.predTab, width=50)
+        self.txtModelFile = Entry(self.predTab, width=70)
         self.txtModelFile.place(x=7, y=110)
         self.txtModelFile['state'] = 'readonly'
 
@@ -646,9 +647,9 @@ class SmashGui(Tk):
                                  command=getModelFileName,
                                  bg='#66baff',
                                  width=7)
-        btnGetModelFile.place(x=365, y=110)
+        btnGetModelFile.place(x=505, y=105)
 
-        # self.cmbPvalue = ttk.Combobox(self.predTab, width=12)
+        # self.cmbPvalue = ttk.Combobox(self.predTab, width=12)'
         # self.cmbPvalue.place(x=450, y=110)
         # self.cmbPvalue['state'] = 'disable'
 

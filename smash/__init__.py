@@ -15,6 +15,7 @@ Created on Sun Jun 14 17:03:20 2020
 from decimal import Decimal
 import multiprocessing as mp
 
+import os
 import pandas as pd
 import numpy as np
 import scipy as sc
@@ -29,7 +30,13 @@ try:
 except Exception:
     from fingerprints import Circular, Path, FunctionGroup
 
+try:
+    pd.set_option('display.max_colwidth', None)
+except:
+    pd.set_option('display.max_colwidth', -1)
 
+
+css = os.path.join(os.path.dirname(__file__), 'css')
 class NotFittedError(Exception):
     pass
     # def __init__(self, msg):
@@ -148,7 +155,6 @@ def ShowResult(subMatrix, subPvalue, label_field='Label',
                         'Accuracy': acc,
                         'Substructure': imgs})
     return out
-    
 
 
 class CircularLearner(Circular):
@@ -230,6 +236,26 @@ class CircularLearner(Circular):
 
         return y_pred.values, predMatrix
 
+    def savePvalue(self, file):
+
+        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
+
+        html_string = '''
+        <html>
+        <head><title>HTML Pandas Dataframe with CSS</title></head>
+        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <body>
+            {table}
+        </body>
+        </html>.
+        '''
+        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+        with open(file, 'w') as f:
+            f.write(html)
+        f.close()
+        return html
+
+
 
 class PathLeanrner(Path):
 
@@ -300,6 +326,24 @@ class PathLeanrner(Path):
 
         return y_pred.values, predMatrix
 
+    def savePvalue(self, file):
+
+        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
+
+        html_string = '''
+        <html>
+        <head><title>HTML Pandas Dataframe with CSS</title></head>
+        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <body>
+            {table}
+        </body>
+        </html>.
+        '''
+        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+        with open(file, 'w') as f:
+            f.write(html)
+        f.close()
+        return html
 
 class FunctionGroupLearner(FunctionGroup):
 
@@ -307,7 +351,7 @@ class FunctionGroupLearner(FunctionGroup):
 
         FunctionGroup.__init__(self, nJobs)
 
-    def fit(self, mols, 
+    def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
             accuracy=0.70, svg=True):
@@ -342,7 +386,7 @@ class FunctionGroupLearner(FunctionGroup):
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         else:
             pass
-        
+
         self.substructure = self.substructure.reindex(meanPvalue.index)
 
         meanPvalue = pd.concat(
@@ -356,14 +400,33 @@ class FunctionGroupLearner(FunctionGroup):
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
         predMatrix = self.GetFunctionGroupsMatrix(mols, svg=True)
-        
+
         cols = set(predMatrix.columns) & set(self.meanPvalue.index)
         predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
         y_pred = (predMatrix.sum(axis=1) > 0) + 0
 
         return y_pred.values, predMatrix
 
+    def savePvalue(self, file):
 
+        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
+
+        html_string = '''
+        <html>
+        <head><title>HTML Pandas Dataframe with CSS</title></head>
+        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <body>
+            {table}
+        </body>
+        </html>.
+        '''
+        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+        with open(file, 'w') as f:
+            f.write(html)
+        f.close()
+        return html
+
+        
 if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress
