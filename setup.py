@@ -16,7 +16,7 @@ from distutils.core import setup
 
 # print（__doc__）
 
-package_data= {'smash':['fingerprints/*', 'css/*']}
+package_data= {'smash':['fragments/*', 'css/*']}
 
 
 setup(name="smash",  
