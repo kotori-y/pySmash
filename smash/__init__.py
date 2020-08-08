@@ -38,7 +38,6 @@ except:
     pd.set_option('display.max_colwidth', -1)
 
 
-css = os.path.join(os.path.dirname(__file__), 'css')
 class NotFittedError(Exception):
     pass
     # def __init__(self, msg):
@@ -242,16 +241,37 @@ class CircularLearner(Circular):
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
-        html_string = '''
-        <html>
+        html_string = """<html>
         <head><title>HTML Pandas Dataframe with CSS</title></head>
-        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <style>
+        /* includes alternating gray and white with on-hover color */
+
+        .mystyle {
+            font-size: 11pt; 
+            font-family: Arial;
+            border-collapse: collapse; 
+            border: 1px solid silver;
+
+        }
+
+        .mystyle td, th {
+            padding: 5px;
+        }
+
+        .mystyle tr:nth-child(even) {
+            background: #E0E0E0;
+        }
+
+        .mystyle tr:hover {
+            background: silver;
+            cursor: pointer;
+        }
+        </style>
         <body>
-            {table}
+            %s
         </body>
-        </html>.
-        '''
-        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+    </html>"""
+        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
         with open(file, 'w') as f:
             f.write(html)
         f.close()
@@ -343,16 +363,37 @@ class PathLeanrner(Path):
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
-        html_string = '''
-        <html>
+        html_string = """<html>
         <head><title>HTML Pandas Dataframe with CSS</title></head>
-        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <style>
+        /* includes alternating gray and white with on-hover color */
+
+        .mystyle {
+            font-size: 11pt; 
+            font-family: Arial;
+            border-collapse: collapse; 
+            border: 1px solid silver;
+
+        }
+
+        .mystyle td, th {
+            padding: 5px;
+        }
+
+        .mystyle tr:nth-child(even) {
+            background: #E0E0E0;
+        }
+
+        .mystyle tr:hover {
+            background: silver;
+            cursor: pointer;
+        }
+        </style>
         <body>
-            {table}
+            %s
         </body>
-        </html>.
-        '''
-        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+    </html>"""
+        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
         with open(file, 'w') as f:
             f.write(html)
         f.close()
@@ -435,16 +476,37 @@ class FunctionGroupLearner(FunctionGroup):
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
-        html_string = '''
-        <html>
+        html_string = """<html>
         <head><title>HTML Pandas Dataframe with CSS</title></head>
-        <link rel="stylesheet" type="text/css" href="{css}/df_style.css"/>
+        <style>
+        /* includes alternating gray and white with on-hover color */
+
+        .mystyle {
+            font-size: 11pt; 
+            font-family: Arial;
+            border-collapse: collapse; 
+            border: 1px solid silver;
+
+        }
+
+        .mystyle td, th {
+            padding: 5px;
+        }
+
+        .mystyle tr:nth-child(even) {
+            background: #E0E0E0;
+        }
+
+        .mystyle tr:hover {
+            background: silver;
+            cursor: pointer;
+        }
+        </style>
         <body>
-            {table}
+            %s
         </body>
-        </html>.
-        '''
-        html = html_string.format(css=css, table=self.meanPvalue.to_html(classes='mystyle', escape=False))
+    </html>"""
+        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
         with open(file, 'w') as f:
             f.write(html)
         f.close()
