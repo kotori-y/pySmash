@@ -40,8 +40,6 @@ except:
 
 class NotFittedError(Exception):
     pass
-    # def __init__(self, msg):
-    #     self.message = msg
 
 
 def Pvalue(n, m, ns, ms):
@@ -75,104 +73,16 @@ def Pvalue(n, m, ns, ms):
         yield p_value
 
 
-def HighlightAtoms(mol, highlightAtoms, figsize=[400, 200], kekulize=True):
-    """This function is used for showing which part
-    of fragment matched the SMARTS by the id of atoms
-    This function is derived from Scopy.
+class BaseLearner(object):
 
-    :param mol: The molecule to be visualized
-    :type mol: rdkit.Chem.rdchem.Mol
-    :param highlightAtoms: The atoms to be highlighted
-    :type highlightAtoms: tuple
-    :param figsize: The resolution ratio of figure
-    :type figsize: list
-    :return: a figure with highlighted molecule
-    :rtype: IPython.core.display.SVG
-
-    """
-    def _revised(svg_words):
+    def __init__(self):
         """
         """
-        svg_words = svg_words.replace(
-            'stroke-width:2px', 'stroke-width:1.5px').replace(
-                'font-size:17px', 'font-size:15px').replace(
-                    'stroke-linecap:butt', 'stroke-linecap:square').replace(
-                        'fill:#FFFFFF', 'fill:none').replace(
-                        'svg:', '')
-        return svg_words
-
-    mc = Chem.Mol(mol.ToBinary())
-
-    if kekulize:
-        try:
-            Chem.Kekulize(mc)
-        except:
-            mc = Chem.Mol(mol.ToBinary())
-    if not mc.GetNumConformers():
-        rdDepictor.Compute2DCoords(mc)
-    drawer = rdMolDraw2D.MolDraw2DSVG(*figsize)
-    drawer.DrawMolecule(mc, highlightAtoms=highlightAtoms)
-    drawer.FinishDrawing()
-    svg = drawer.GetDrawingText()
-    # It seems that the svg renderer used doesn't quite hit the spec.
-    # Here are some fixes to make it work in the notebook, although I think
-    # the underlying issue needs to be resolved at the generation step
-    return SVG(_revised(svg))
-
-
-def ShowResult(subMatrix, subPvalue, label_field='Label',
-               smiles_field='SMILES', smarts_field='SMARTS',
-               pvalue_field='Val', aim_label=1, topx=50):
-
-    if smiles_field is not None:
-        subMatrix = subMatrix.set_index(smiles_field)
-    if smarts_field is not None:
-        subPvalue = subPvalue.set_index(smarts_field)
-
-    labels = subMatrix[label_field].values
-    subPvalue = subPvalue.sort_values(pvalue_field)
-
-    imgs = []
-    smas = subPvalue.index[:topx]
-    for sma in smas:
-        patt = Chem.MolFromSmarts(sma)
-        smi = subMatrix[(subMatrix[sma] == 1) & (labels == aim_label)
-                        ].sample(n=1).index.values[0]
-        mol = Chem.MolFromSmiles(smi)
-        atoms = mol.GetSubstructMatches(patt)[0]
-        svg = HighlightAtoms(mol, atoms)
-        imgs.append(svg.data)
-
-    ns = subMatrix.loc[:, smas].sum(axis=0).values
-    ms = subMatrix.loc[:, smas][labels == aim_label].sum(axis=0).values
-    pvalues = subPvalue[pvalue_field][:topx].map(
-        lambda x: '{:.3e}'.format(x)).values
-    acc = list(map(lambda x: '{:.3f}'.format(x), ms/ns))
-
-    out = pd.DataFrame({'SMARTS': smas,
-                        'Total Number of Compounds': ns,
-                        'Number of Positive Compounds': ms,
-                        'p-value': pvalues,
-                        'Accuracy': acc,
-                        'Substructure': imgs})
-    return out
-
-
-class CircularLearner(Circular):
-
-    def __init__(self,
-                 maxRadius=2, minRadius=1,
-                 nBits=1024, folded=False,
-                 maxFragment=True, nJobs=1,
-                 ):
-        """
-        """
-        Circular.__init__(self,
-                          maxRadius, minRadius,
-                          nBits, folded,
-                          maxFragment, nJobs)
         self.meanPvalue = None
         self.meanMatrix = None
+
+    def GetMatrix(self, mols, **kwgrs):
+        pass
 
     def fit(self, mols,
             labels, aimLabel=1,
@@ -181,7 +91,7 @@ class CircularLearner(Circular):
             svg=True):
         """
         """
-        matrix = self.GetCircularMatrix(mols, svg=svg)
+        matrix = self.GetMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
@@ -230,7 +140,7 @@ class CircularLearner(Circular):
             raise NotFittedError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
-        predMatrix = self.GetCircularMatrix(mols)
+        predMatrix = self.GetMatrix(mols, svg=True)
         cols = set(predMatrix.columns) & set(self.meanPvalue.index)
         predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
         y_pred = (predMatrix.sum(axis=1) > 0) + 0
@@ -282,9 +192,30 @@ class CircularLearner(Circular):
         with bz2.BZ2File(file + '.pbz2', 'w') as f: 
             cPickle.dump(self, f)
         f.close()
+    
 
 
-class PathLeanrner(Path):
+class CircularLearner(BaseLearner, Circular):
+
+    def __init__(self,
+                 maxRadius=2, minRadius=1,
+                 nBits=1024, folded=False,
+                 maxFragment=True, nJobs=1,
+                 ):
+        """
+        """
+        Circular.__init__(self,
+                          maxRadius, minRadius,
+                          nBits, folded,
+                          maxFragment, nJobs)
+
+    def GetMatrix(self, mols, **kwgrs):
+
+        matrix = self.GetCircularMatrix(mols, **kwgrs)
+        return matrix
+
+
+class PathLeanrner(BaseLearner, Path):
 
     def __init__(self,
                  minPath=1, maxPath=7,
@@ -297,226 +228,23 @@ class PathLeanrner(Path):
                       nBits, folded, nJobs,
                       maxFragment)
 
-    def fit(self, mols,
-            labels, aimLabel=1,
-            minNum=5, pThreshold=0.05,
-            accuracy=0.70, svg=True, Bonferroni=False):
-        """
-        """
-        matrix = self.GetPathMatrix(mols, svg=svg)
+    def GetMatrix(self, mols, **kwgrs):
 
-        bo = (matrix.sum(axis=0) >= minNum).values
-        matrix = matrix.loc[:, bo]
+        matrix = self.GetPathMatrix(mols, **kwgrs)
+        return matrix
 
-        n = len(labels)
-        m = (labels == aimLabel).sum()
 
-        meanPvalue = {}
-        for col, val in matrix.iteritems():
-
-            ns = val.sum()
-            ms = (val[labels == aimLabel] == 1).sum()
-
-            pvalue = sum(Pvalue(n, m, ns, ms))
-            if pvalue <= pThreshold:
-                meanPvalue[col] = pvalue
-
-        meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
-        meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
-
-        if Bonferroni:
-            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
-            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
-        else:
-            pass
-
-        meanPvalue['Total'] = meanMatrix.sum(axis=0)
-        meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
-        meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
-        meanPvalue['Coverage'] = meanPvalue['Hitted']/m
-
-        if accuracy is not None:
-            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
-            meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
-        else:
-            pass
-
-        self.substructure = self.substructure.reindex(meanPvalue.index)
-        meanPvalue = pd.concat(
-            (meanPvalue, self.substructure), axis=1, sort=False)
-        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
-        return self
-
-    def predict(self, mols):
-        if self.meanPvalue is None or self.meanMatrix is None:
-            raise NotFittedError(
-                "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
-
-        predMatrix = self.GetCircularMatrix(mols)
-        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
-        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
-        y_pred = (predMatrix.sum(axis=1) > 0) + 0
-
-        return y_pred.values, predMatrix
-
-    def savePvalue(self, file):
-
-        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
-
-        html_string = """<html>
-        <head><title>HTML Pandas Dataframe with CSS</title></head>
-        <style>
-        /* includes alternating gray and white with on-hover color */
-
-        .mystyle {
-            font-size: 11pt; 
-            font-family: Arial;
-            border-collapse: collapse; 
-            border: 1px solid silver;
-
-        }
-
-        .mystyle td, th {
-            padding: 5px;
-        }
-
-        .mystyle tr:nth-child(even) {
-            background: #E0E0E0;
-        }
-
-        .mystyle tr:hover {
-            background: silver;
-            cursor: pointer;
-        }
-        </style>
-        <body>
-            %s
-        </body>
-    </html>"""
-        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
-        with open(file, 'w') as f:
-            f.write(html)
-        f.close()
-        return html
-
-    def saveModel(self, file):
-
-        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
-            cPickle.dump(self, f)
-        f.close()
-class FunctionGroupLearner(FunctionGroup):
+class FunctionGroupLearner(BaseLearner, FunctionGroup):
 
     def __init__(self, nJobs=1):
 
         FunctionGroup.__init__(self, nJobs)
 
-    def fit(self, mols,
-            labels, aimLabel=1,
-            minNum=5, pThreshold=0.05,
-            accuracy=0.70, svg=True, Bonferroni=False):
+    def GetMatrix(self, mols, **kwgrs):
 
-        matrix = self.GetFunctionGroupsMatrix(mols, svg=svg)
-        bo = (matrix.sum(axis=0) >= minNum).values
-        matrix = matrix.loc[:, bo]
+        matrix = self.GetFunctionGroupsMatrix(mols, **kwgrs)
+        return matrix 
 
-        n = len(labels)
-        m = (labels == aimLabel).sum()
-
-        meanPvalue = {}
-        for col, val in matrix.iteritems():
-
-            ns = val.sum()
-            ms = (val[labels == aimLabel] == 1).sum()
-
-            pvalue = sum(Pvalue(n, m, ns, ms))
-            if pvalue <= pThreshold:
-                meanPvalue[col] = pvalue
-
-        meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
-        meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
-
-        if Bonferroni:
-            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
-            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
-        else:
-            pass
-
-        meanPvalue['Total'] = meanMatrix.sum(axis=0)
-        meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
-        meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
-        meanPvalue['Coverage'] = meanPvalue['Hitted']/m
-
-        if accuracy:
-            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
-            meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
-        else:
-            pass
-
-        self.substructure = self.substructure.reindex(meanPvalue.index)
-
-        meanPvalue = pd.concat(
-            (meanPvalue, self.substructure), axis=1, sort=False)
-        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
-        return self
-
-    def predict(self, mols):
-        if self.meanPvalue is None or self.meanMatrix is None:
-            raise NotFittedError(
-                "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
-
-        predMatrix = self.GetFunctionGroupsMatrix(mols, svg=True)
-
-        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
-        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
-        y_pred = (predMatrix.sum(axis=1) > 0) + 0
-
-        return y_pred.values, predMatrix
-
-    def savePvalue(self, file):
-
-        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
-
-        html_string = """<html>
-        <head><title>HTML Pandas Dataframe with CSS</title></head>
-        <style>
-        /* includes alternating gray and white with on-hover color */
-
-        .mystyle {
-            font-size: 11pt; 
-            font-family: Arial;
-            border-collapse: collapse; 
-            border: 1px solid silver;
-
-        }
-
-        .mystyle td, th {
-            padding: 5px;
-        }
-
-        .mystyle tr:nth-child(even) {
-            background: #E0E0E0;
-        }
-
-        .mystyle tr:hover {
-            background: silver;
-            cursor: pointer;
-        }
-        </style>
-        <body>
-            %s
-        </body>
-    </html>"""
-        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
-        with open(file, 'w') as f:
-            f.write(html)
-        f.close()
-        return html
-
-    def saveModel(self, file):
-
-        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
-            cPickle.dump(self, f)
-        f.close()
 
 if '__main__' == __name__:
     from rdkit import Chem
@@ -535,18 +263,18 @@ if '__main__' == __name__:
     #                            maxFragment=True, nJobs=4)
 
     # circular.fit(mols, y_true)
-    # # y_pred, predMatrix = circular.predict(mols)
-    # # print(y_pred)
+    # y_pred, predMatrix = circular.predict(mols)
+    # print(y_pred)
     # print(circular.meanPvalue)
 
     # path = PathLeanrner(minPath=1,
-    #                     maxPath=3, nJobs=4,
+    #                     maxPath=7, nJobs=4,
     #                     maxFragment=True)
     # path.fit(mols, y_true, svg=True)
-    # print(path.)
+    # print(path.meanPvalue)
 
     fg = FunctionGroupLearner(nJobs=4)
 
     fg.fit(mols, y_true)
-    print(fg.predict(mols)[0])
-    print('Done !!!')
+    print(fg.predict(mols)[-1])
+    # print('Done !!!')
