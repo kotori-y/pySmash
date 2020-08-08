@@ -28,7 +28,6 @@ from tkinter import messagebox
 
 import pandas as pd
 from getRes import getFingerprintRes, predict
-from smash import ShowResult
 
 
 class SmashGui(Tk):
@@ -42,7 +41,7 @@ class SmashGui(Tk):
         # self.pack()
         self.geometry('600x400+500+200')
         self.resizable(0, 0)
-        self.title('Smash molecule based on fingerprint')
+        self.title('Smash molecule and obtain significant fragments')
 
         self.bg = '#abbfc5'
         self.fg = '#b70131'
@@ -147,7 +146,7 @@ class SmashGui(Tk):
                              fg=self.fg, font=self.lblFont)
         lblsubPvalue.place(x=350, y=80)
 
-        lblsubHTML = Label(self.view, text='Summray',
+        lblsubHTML = Label(self.view, text='Model',
                            fg=self.fg, font=self.lblFont)
         lblsubHTML.place(x=600, y=80)
 

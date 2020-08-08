@@ -28,9 +28,9 @@ from IPython.display import SVG
 from rdkit.Chem import rdDepictor
 
 try:
-    from .fingerprints import Circular, Path, FunctionGroup
+    from .fragments import Circular, Path, FunctionGroup
 except Exception:
-    from fingerprints import Circular, Path, FunctionGroup
+    from fragments import Circular, Path, FunctionGroup
 
 try:
     pd.set_option('display.max_colwidth', None)
