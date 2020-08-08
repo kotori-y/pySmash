@@ -55,8 +55,8 @@ if '__main__' == __name__:
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     labels = data.Label.values
     
-    circular = CircularLearner(minRadius=1, maxRadius=6, nJobs=4)
-    circular.fit(mols, labels, pThreshold=0.05, accuracy=0.7)
+    # circular = CircularLearner(minRadius=1, maxRadius=6, nJobs=4)
+    # circular.fit(mols, labels, pThreshold=0.05, accuracy=0.7)
     
     # pd.set_option('display.max_colwidth', -1)
     # circular.meanPvalue.to_html('out.html', escape=False)

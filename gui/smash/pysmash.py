@@ -85,8 +85,9 @@ class SmashGui(Tk):
         self.thread_run.join()
         self.thread_run = None
 
-    def downloadRes(self, data, datype, **kwgrs):
-        self.previewRes(data, datype)
+    def downloadRes(self, data, datype, preview=True, **kwgrs):
+        if preview:
+            self.previewRes(data, datype)
         if datype == 'df':
             savefile = asksaveasfilename(filetypes=(("CSV file", "*.csv*"), ))
             if savefile:
@@ -97,12 +98,23 @@ class SmashGui(Tk):
                         title='Error!', message="Permission Denied!!!")
             else:
                 pass
-        else:
+        elif datype == 'HTML':
             savefile = asksaveasfilename(
                 filetypes=(("Html file", "*.html*"), ))
             if savefile:
                 try:
                     self.model.savePvalue(savefile)
+                except PermissionError:
+                    messagebox.showerror(
+                        title='Error!', message="Permission Denied!!!")
+            else:
+                pass
+        else:
+            savefile = asksaveasfilename(
+                filetypes=(("pkl file", "*.pkl*"), ))
+            if savefile:
+                try:
+                    self.model.saveModel(savefile)
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
@@ -118,18 +130,8 @@ class SmashGui(Tk):
                 max_cols=10, justify='center'))
             self.previewPad['state'] = 'disabled'
         else:
-            # try:
-            #     aimLabel = float(self.cmbAim.get())
-            # except:
-            #     pass
-            # self.html = ShowResult(self.subMatrix, self.subPvalue,
-            #                        smarts_field=None, aim_label=aimLabel,
-            #                        topx=display)
-
-            # self.previewPad.insert(
-            #     tk.END, self.html.iloc[:, :-1].to_string(max_cols=10, justify='center'))
-            # self.previewPad['state'] = 'disabled'
-            pass
+            self.previewPad.insert(tk.END, self.kwgrs)
+            self.previewPad['state'] = 'disabled'
 
     def preview(self):
 
@@ -181,25 +183,25 @@ class SmashGui(Tk):
                                    font=('Times New Roman', 12),
                                    width=8,
                                    command=lambda: self.downloadRes(
-                                       data=None, datype='html'))
+                                       data=None, datype='HTML'))
         btnDownloadPvalue.place(x=400, y=120)
 
-        btnPreviewHTML = Button(self.view, text='Preview',
-                                bg=self.btg,
-                                font=('Times New Roman', 12),
-                                width=8,
-                                command=lambda: self.previewRes(
-                                    None, 'HTML', 50)
-                                )
-        btnPreviewHTML.place(x=560, y=120)
-
-        btnDownloadHTML = Button(self.view, text='Download',
+        btnPreviewModel = Button(self.view, text='Preview',
                                  bg=self.btg,
                                  font=('Times New Roman', 12),
                                  width=8,
-                                 command=lambda: self.downloadRes(
-                                     data=None, datype='HTML', escape=False))
-        btnDownloadHTML.place(x=650, y=120)
+                                 command=lambda: self.previewRes(
+                                     None, 'Model', 50)
+                                 )
+        btnPreviewModel.place(x=560, y=120)
+
+        btnDownloadModel = Button(self.view, text='Download',
+                                  bg=self.btg,
+                                  font=('Times New Roman', 12),
+                                  width=8,
+                                  command=lambda: self.downloadRes(
+                                      data=None, datype='Model', escape=False))
+        btnDownloadModel.place(x=650, y=120)
 
         self.previewPad = Text(self.view, width=105, height=35,
                                wrap="none", borderwidth=0,
@@ -219,21 +221,21 @@ class SmashGui(Tk):
 
     def main(self):
 
-        kwgrs = {'smiles_field': self.cmbSmiles.get(),
-                 'label_field': self.cmbLabel.get(),
-                 'fingerprint': self.cmbFP.get(),
-                 'radius': self.Radius.get(),
-                 'minRadius': self.minRadius.get(),
-                 'minPath': self.minPath.get(),
-                 'maxPath': self.maxPath.get(),
-                 'folded': False,
-                 'minRatio': self.minRatio.get(),
-                 'minNum': self.minNum.get(),
-                 'aimLabel': self.cmbAim.get(),
-                 'n_jobs': self.n_jobs.get(),
-                 'Bonferroni': self.Bonferroni.get(),
-                 'minAccuracy': self.minAcc.get(),
-                 'pValue': self.pValue.get()}
+        self.kwgrs = {'smiles_field': self.cmbSmiles.get(),
+                      'label_field': self.cmbLabel.get(),
+                      'fingerprint': self.cmbFP.get(),
+                      'radius': self.Radius.get(),
+                      'minRadius': self.minRadius.get(),
+                      'minPath': self.minPath.get(),
+                      'maxPath': self.maxPath.get(),
+                      'folded': False,
+                      'minRatio': self.minRatio.get(),
+                      'minNum': self.minNum.get(),
+                      'aimLabel': self.cmbAim.get(),
+                      'n_jobs': self.n_jobs.get(),
+                      'Bonferroni': self.Bonferroni.get(),
+                      'minAccuracy': self.minAcc.get(),
+                      'pValue': self.pValue.get()}
 
         def add(words):
             textPad['state'] = 'normal'
@@ -263,7 +265,8 @@ class SmashGui(Tk):
         add('Load file... ')
         data = self.readFile(self.filename)
 
-        self.model, self.subMatrix, self.subPvalue = getFingerprintRes(textPad, data, **kwgrs)
+        self.model, self.subMatrix, self.subPvalue = getFingerprintRes(
+            textPad, data, **self.kwgrs)
         time.sleep(1)
         add('\nFinished!')
 
@@ -271,10 +274,21 @@ class SmashGui(Tk):
 
     def main_predict(self):
 
+        self.detailPad['state'] = 'normal'
+        self.detailPad.insert(tk.END, 'Waiting...\n')
+        self.detailPad['state'] = 'disable'
+
         data = self.readFile(self.predFileName)
         smis = data[self.cmbPredSmiles.get()].values
-        y_pred, predMatrix = predict(self.PvFileName, smis)
-        print(y_pred, predMatrix)
+        y_pred, self.predMatrix = predict(self.modelFileName, smis)
+        self.predMatrix['PredLabel'] = y_pred
+        self.btnSaveMatrix['state'] = 'normal'
+
+        self.detailPad['state'] = 'normal'
+        self.detailPad.insert(tk.END, 'Finished!!!\n')
+        self.detailPad['state'] = 'disable'
+        
+        # print(self.predMatrix)
 
     def creatTab(self):
         tab_main = ttk.Notebook(self)
@@ -654,7 +668,7 @@ class SmashGui(Tk):
 
         color = '#ffd5b2'
         bbg = Label(self.predTab, bg=color,
-                    width=500, height=4)
+                    width=500, height=7)
         bbg.place(x=0, y=147)
 
         btnPredict = Button(self.predTab, text='Predict',
@@ -663,6 +677,27 @@ class SmashGui(Tk):
                             bg='#66baff',
                             width=7)
         btnPredict.place(x=250, y=165)
+
+        # self.btnSaveLabel = Button(self.predTab, text='Save Predict Label',
+        #                            command=lambda: self.main_thread(
+        #                                self.main_predict),
+        #                            bg='#66baff',
+        #                            width=20)
+        # self.btnSaveLabel.place(x=140, y=220)
+        # self.btnSaveLabel['state'] = 'disable'
+
+        self.btnSaveMatrix = Button(self.predTab, text='Save Predict Result',
+                                    command=lambda: self.downloadRes(
+                                        data=self.predMatrix, datype='df', preview=False, index=False),
+                                    bg='#66baff',
+                                    width=20)
+        self.btnSaveMatrix.place(x=210, y=220)
+        self.btnSaveMatrix['state'] = 'disable'
+
+        self.detailPad = Text(self.predTab, width=30, height=5,
+                              wrap="none", borderwidth=0,
+                              )
+        self.detailPad.place(x=170, y=280)
 
 
 if '__main__' == __name__:

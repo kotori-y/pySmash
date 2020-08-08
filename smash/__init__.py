@@ -280,7 +280,7 @@ class PathLeanrner(Path):
     def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
-            accuracy=0.70, svg=True):
+            accuracy=0.70, svg=True, Bonferroni=False):
         """
         """
         matrix = self.GetPathMatrix(mols, svg=svg)
@@ -303,6 +303,12 @@ class PathLeanrner(Path):
 
         meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+
+        if Bonferroni:
+            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
+            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
+        else:
+            pass
 
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
         meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
@@ -366,7 +372,7 @@ class FunctionGroupLearner(FunctionGroup):
     def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pThreshold=0.05,
-            accuracy=0.70, svg=True):
+            accuracy=0.70, svg=True, Bonferroni=False):
 
         matrix = self.GetFunctionGroupsMatrix(mols, svg=svg)
         bo = (matrix.sum(axis=0) >= minNum).values
@@ -387,6 +393,12 @@ class FunctionGroupLearner(FunctionGroup):
 
         meanMatrix = matrix.reindex(meanPvalue.keys(), axis=1)
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+
+        if Bonferroni:
+            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
+            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
+        else:
+            pass
 
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
         meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
@@ -448,7 +460,7 @@ if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress
 
-    data = pd.read_csv(r'tests\Canc\Canc.txt', sep='\t')
+    data = pd.read_csv(r'tests\Carc\Carc.txt', sep='\t')
     # data = data.sample(n=100)
 
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))

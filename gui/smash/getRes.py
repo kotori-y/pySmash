@@ -12,7 +12,7 @@ Created on Mon Jun 22 14:28:28 2020
 """
 
 
-from smash import CircularLearner, Path, FunctionGroup, Pvalue
+from smash import CircularLearner, PathLeanrner, FunctionGroupLearner, Pvalue
 from itertools import compress
 import openbabel as ob
 from rdkit import Chem
@@ -73,7 +73,7 @@ def getFingerprintRes(textPad, data, **kwgrs):
         textPad['state'] = 'disable'
 
     ############# Load file #############
-    print(kwgrs)
+    # print(kwgrs)
     smiles_field = kwgrs.get('smiles_field')
     label_field = kwgrs.get('label_field')
     fingerprint = kwgrs.get('fingerprint')
@@ -118,22 +118,21 @@ def getFingerprintRes(textPad, data, **kwgrs):
                                 folded=kwgrs.get('folded'),
                                 maxFragment=True,
                                 nJobs=n_jobs)
-        model.fit(mols, labels,
-                  aimLabel=aimLabel, minNum=minNum, pThreshold=pValue,
-                  accuracy=accuracy, Bonferroni=Bonferroni,)
 
     elif fingerprint == 'Path':
-        path = Path(mols,
-                    minPath=kwgrs.get('minPath'),
-                    maxPath=kwgrs.get('maxPath'),
-                    folded=kwgrs.get('folded'),
-                    # nBits=kwgrs.get('nBits'),
-                    nJobs=n_jobs)
-        subMatrix = path.GetPathMatrix()
-
+        model = PathLeanrner(minPath=kwgrs.get('minPath'),
+                             maxPath=kwgrs.get('maxPath'),
+                             folded=kwgrs.get('folded'),
+                             maxFragment=True,
+                             nJobs=n_jobs)
+    
     elif fingerprint == 'Function Group':
-        fg = FunctionGroup(mols, nJobs=n_jobs)
-        subMatrix = fg.GetFunctionGroupsMatrix()
+        model = FunctionGroupLearner(nJobs=n_jobs)
+
+    model.fit(mols, labels,
+                aimLabel=aimLabel, minNum=minNum, pThreshold=pValue,
+                accuracy=accuracy, Bonferroni=Bonferroni,)
+
         # print(subMatrix)
     subPvalue, subMatrix = model.meanPvalue, model.meanMatrix
     add('Successed!\n\n')
@@ -195,8 +194,6 @@ def getFingerprintRes(textPad, data, **kwgrs):
     # ############# Calculate p-value #############
 
     return model, subMatrix, subPvalue
-
-
 
 
 def predict(modelFile, smis):
