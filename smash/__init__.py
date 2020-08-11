@@ -41,10 +41,9 @@ except:
 class NotFittedError(Exception):
     pass
 
-
+    
 def Pvalue(n, m, ns, ms):
-    """
-    get P-value
+    """Get P-value.
 
     Parameters
     ----------
@@ -60,7 +59,7 @@ def Pvalue(n, m, ns, ms):
     Yields
     ------
     res : float
-        P-value.
+        use sum() function to get the pvalue.
 
     """
     for i in range(ms, ns+1):
@@ -73,24 +72,58 @@ def Pvalue(n, m, ns, ms):
         yield p_value
 
 
-class BaseLearner(object):
-
+class BaseLearner:
+    """Base class for all learner in pysamsh.
+    """    
     def __init__(self):
-        """
-        """
+        """Initialization.
+        """        
         self.meanPvalue = None
         self.meanMatrix = None
 
     def GetMatrix(self, mols, **kwgrs):
-        pass
+        """Get the matrix of fragment of mol library.
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            compounds, which have aspecific endpoint label, used to obtain significant fragments.
+        """        
 
     def fit(self, mols,
             labels, aimLabel=1,
-            minNum=5, pThreshold=0.05,
-            accuracy=None, Bonferroni=False,
-            svg=True):
-        """
-        """
+            minNum=5, minRatio=0.4, 
+            pCutoff=0.05, accCutoff=None, 
+            Bonferroni=False, svg=True):
+        """Learning from given database which have aspecific endpoint label.
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            Compounds, which have aspecific endpoint label, used to obtain significant fragments
+        labels : array-like of shape (len(mols),)
+            The target values (class labels in classification)
+        aimLabel : any, optional
+            The label to be regarded as activity label (class labels in classification), by default 1
+        minNum : int, optional
+            The minimum frequency a fragment required, by default 5
+        minRatio : float, optional
+            The minimum ratio a fragment required , by default 0.4
+        pCutoff : float, optional
+            The pvalue cutoff, a fragment would be regarded as significant 
+            if its pvalue below pCutoff, The minimum frequency a fragment requiredby default 0.05
+        accCutoff : float, optional
+            The minimum accraucy lead by a fragment judge, by default None
+        Bonferroni : bool, optional
+            Whether use Bonferroni method to revised, by default False
+        svg : bool, optional
+            Whether output with a svg image, by default True
+
+        Returns
+        -------
+        smash.BaseLearner
+            A fitted learner, used predict() method can predict molecules without label 
+        """        
         matrix = self.GetMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
@@ -106,16 +139,10 @@ class BaseLearner(object):
             ms = (val[labels == aimLabel] == 1).sum()
 
             pvalue = sum(Pvalue(n, m, ns, ms))
-            if pvalue <= pThreshold:
+            if pvalue <= pCutoff:
                 meanPvalue[col] = pvalue
 
         meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
-
-        if Bonferroni:
-            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
-            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pThreshold]
-        else:
-            pass
 
         meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
         meanPvalue['Total'] = meanMatrix.sum(axis=0)
@@ -123,9 +150,15 @@ class BaseLearner(object):
         meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
         meanPvalue['Coverage'] = meanPvalue['Hitted']/m
 
-        if accuracy is not None:
+        if accCutoff:
             meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
             meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
+        else:
+            pass
+
+        if Bonferroni:
+            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
+            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pCutoff]
         else:
             pass
 
@@ -259,13 +292,13 @@ if '__main__' == __name__:
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
-    # circular = CircularLearner(minRadius=1, maxRadius=6,
-    #                            maxFragment=True, nJobs=4)
+    circular = CircularLearner(minRadius=1, maxRadius=6,
+                               maxFragment=True, nJobs=4)
 
-    # circular.fit(mols, y_true)
-    # y_pred, predMatrix = circular.predict(mols)
-    # print(y_pred)
-    # print(circular.meanPvalue)
+    circular.fit(mols, y_true)
+    y_pred, predMatrix = circular.predict(mols)
+    print(y_pred)
+    print(circular.meanPvalue.shape)
 
     # path = PathLeanrner(minPath=1,
     #                     maxPath=7, nJobs=4,
@@ -273,8 +306,8 @@ if '__main__' == __name__:
     # path.fit(mols, y_true, svg=True)
     # print(path.meanPvalue)
 
-    fg = FunctionGroupLearner(nJobs=4)
+    # fg = FunctionGroupLearner(nJobs=4)
 
-    fg.fit(mols, y_true)
-    print(fg.predict(mols)[-1])
+    # fg.fit(mols, y_true)
+    # print(fg.predict(mols)[-1])
     # print('Done !!!')
