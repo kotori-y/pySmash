@@ -38,6 +38,9 @@ subMolDic = {}
 
 
 def _DisposedFgFragment(mol, subMol, molSize=(150, 150)):
+    """Dispose the bitinfo retrived from GetFunctionGroupFragment
+    *internal only*
+    """
     if not mol.GetNumConformers():
         rdDepictor.Compute2DCoords(mol)
 
@@ -66,6 +69,8 @@ def _DisposedFgFragment(mol, subMol, molSize=(150, 150)):
 
 
 def merge(mol, marked, aset):
+    """*internal only*
+    """
     bset = set()
     for idx in aset:
         atom = mol.GetAtomWithIdx(idx)
@@ -95,6 +100,21 @@ PATT_TUPLE = (PATT_DOUBLE_TRIPLE, PATT_CC_DOUBLE_TRIPLE,
 
 
 def GetFunctionGroupFragment(mol, svg=False):
+    """Calculate function group fragment.
+
+    Parameters
+    ----------
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
+    svg : bool, optional
+        Whether output with a svg image, by default False
+
+    Returns
+    -------
+    ifgs : tuple of list
+        In each tuple element, the first element is the SMARTS of fragment
+        and the second one svg string (is svg set as True)
+    """    
     marked = set()
 # mark all heteroatoms in a molecule, including halogens
     for atom in mol.GetAtoms():
@@ -128,21 +148,13 @@ def GetFunctionGroupFragment(mol, svg=False):
                 ifgs.append((fg, _DisposedFgFragment(mol, fg)))
             else:
                 ifgs.append((fg, ))
+    
     return ifgs
 
 
 if __name__ == "__main__":
     from rdkit import Chem
-    from itertools import compress
-    import pandas as pd
-
-    data = pd.read_csv(r'tests\Canc\Canc.txt', sep='\t')
-    data = data.sample(n=100)
-
-    mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
-    bo = mols.notna().values
-
-    mols = list(compress(mols, bo))
     
-    for mol in mols:
-        fgs = GetFunctionGroupFragment(mol, svg=True)
+    mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
+    fragments = GetFunctionGroupFragment(mol, svg=True)
+    print(fragments)

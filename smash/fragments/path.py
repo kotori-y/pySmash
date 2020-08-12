@@ -24,7 +24,9 @@ __all__ = ['GetFoldedPathFragment',
 
 
 def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
-
+    """Dispose the bitinfo retrived from GetFoldedPathFragment() or GetUnfoldedPathFragment()
+    *internal only*
+    """
     def func(frags):
         sets = [set(e) for e in frags]
         us = []
@@ -44,7 +46,7 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
         for k in bitInfo:
             bondPath = list(eval(k))
             smi, svgImg = DrawRDKitEnv(mol, bondPath)
-            fragments[dic[k]] = (smi, svgImg.replace('\n','')) if svg else smi
+            fragments[dic[k]] = (smi, svgImg.replace('\n','')) if svg else (smi, )
     else:
         pass
 
@@ -54,6 +56,9 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
 def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
                  aromaticColor=(0.9, 0.9, 0.2), extraColor=(0.9, 0.9, 0.9), nonAromaticColor=None,
                  drawOptions=None, **kwargs):
+    """Get SMARTS and SVG image from given bonds
+    *internal only*
+    """
     menv = _getRDKitEnv(mol, bondPath, baseRad, aromaticColor,
                         extraColor, nonAromaticColor, **kwargs)
     submol = menv.submol
@@ -82,28 +87,31 @@ def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
 
 def GetFoldedPathFragment(mol,
                           minPath=1, maxPath=7,
-                          nBits=2048, maxFragment=True,
+                          nBits=1024, maxFragment=True,
                           svg=False):
     """Calculate folded path fragment.
 
     Parameters
     ----------
-    mol : rdkit.Chem.rdchem.Mol
-        the aim molecule.
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
     minPath : int, optional
-        minimum number of bonds to include in the subgraphs. The default is 1.
+        The probable minimum length of path-based fragment, by default 1
     maxPath : int, optional
-        maximum number of bonds to include in the subgraphs. The default is 1.
+        The probable maximum length of path-based fragment, by default 7
     nBits : int, optional
-        the number of bit of morgan. The default is 2048.
+        the number of bit of morgan, by default 1014
+    maxFragment : bool, optional
+        Whether only return the maximum fragment of a given start atom, by default True
+    svg : bool, optional
+        Whether output with a svg image, by default False
 
     Returns
     -------
-    dict
-        the key of dict is the number of bit (count from 0), 
-        and value is a list of list, in each list element the bond consist of 
-        substrcuture
-
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     bitInfo = {}
     fp = RDKFingerprint(mol,
@@ -117,28 +125,29 @@ def GetFoldedPathFragment(mol,
     return fragments
 
 
-def GetUnfoldedPathFragment(mol,
-                            minPath=1, maxPath=7,
+def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
                             maxFragment=True, svg=False):
-    """
-    Calculate fingerprint and return the info of each bit
+    """Calculate unfolded path fragment.
 
     Parameters
     ----------
-    mol : rdkit.Chem.rdchem.Mol
-        the aim molecule.
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
     minPath : int, optional
-        minimum number of bonds to include in the subgraphs. The default is 1.
+        The probable minimum length of path-based fragment, by default 1
     maxPath : int, optional
-        maximum number of bonds to include in the subgraphs. The default is 1.
+        The probable maximum length of path-based fragment, by default 7
+    maxFragment : bool, optional
+        Whether only return the maximum fragment of a given start atom, by default True
+    svg : bool, optional
+        Whether output with a svg image, by default False
 
     Returns
     -------
-    dict
-        the key of dict is the number of bit (count from 0), 
-        and value is a list of list, in each list element the bond consist of 
-        substrcuture
-
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     bitInfo = {}
     fp = UnfoldedRDKFingerprintCountBased(mol,
@@ -152,35 +161,42 @@ def GetUnfoldedPathFragment(mol,
 
 def GetPathFragment(mol,
                     minPath=1, maxPath=7,
-                    nBits=2048, folded=False,
+                    nBits=1024, folded=False,
                     maxFragment=True, svg=False):
-    """
-
+    """Calculate path fragment.
 
     Parameters
     ----------
-    mol : TYPE
-        DESCRIPTION.
-    minPath : TYPE, optional
-        DESCRIPTION. The default is 1.
-    maxPath : TYPE, optional
-        DESCRIPTION. The default is 7.
-    nBits : TYPE, optional
-        DESCRIPTION. The default is 2048.
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
+    minPath : int, optional
+        The probable minimum length of path-based fragment, by default 1
+    maxPath : int, optional
+        The probable maximum length of path-based fragment, by default 7
+    nBits : int, optional
+        the number of bit of morgan, by default 1014
+        this param would be ignored, if the folded set as False.
+    folded : bool, optional
+        which generate fragment based on unfolded fingerprint, by default True.
+    maxFragment : bool, optional
+        Whether only return the maximum fragment at a center atom, by default True
+    svg : bool, optional
+        Whether output with a svg image, by default False
 
     Returns
     -------
-    dict
-        the substruct of mol and frequency.
-
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     if folded:
-        bitInfo = GetFoldedPathFragment(mol,
+        fragments = GetFoldedPathFragment(mol,
                                         minPath=minPath, maxPath=maxPath,
                                         nBits=nBits, maxFragment=maxFragment,
                                         svg=svg)
     else:
-        bitInfo = GetUnfoldedPathFragment(mol,
+        fragments = GetUnfoldedPathFragment(mol,
                                           minPath=minPath, maxPath=maxPath,
                                           maxFragment=maxFragment, svg=svg)
 
@@ -195,11 +211,11 @@ def GetPathFragment(mol,
 
     # substrcutures = list(set(substrcutures))
     # return substrcutures
-    return bitInfo
+    return fragments
 
 
 if '__main__' == __name__:
 
     mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
-    frag = GetPathFragment(mol, maxFragment=True, svg=True)
-    print(frag)
+    fragments = GetPathFragment(mol, maxFragment=True, svg=True)
+    print(fragments)

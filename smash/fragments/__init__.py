@@ -30,39 +30,29 @@ except:
     from functionGroup import *
 
 
-class Circular(object):
-
-    def __init__(self,
-                 maxRadius=2, minRadius=1,
+class Circular:
+    """Calculte circular fragments and obtain matrix  
+    """    
+    def __init__(self, minRadius=1, maxRadius=2, 
                  nBits=1024, folded=False,
                  maxFragment=True, nJobs=1):
-        """
-        Init
+        """Initialization
 
         Parameters
         ----------
-        mols : a list of rdkit.Chem.rdchem.Mol
-            the aim molecule library.
-        maxRadius : int, optional
-            the radius of circular fingerprints. The default is 2
-        nBits : int, optional
-            the number of bit of morgan. The default is 1024
-            this param would be ignored, if the folded set as False
-        folded : bool, optional
-            which generate fragment based on unfoled fingerprint
-            The default is True.
         minRadius : int, optional
-            minimum radius of environment. The default is 1
+            The probable minimum radius of circular fragment, by default 1
+        maxRadius : int, optional
+            The probable maximum radius of circular fragment, by default 2
+        nBits : int, optional
+            the number of bit of morgan, by default 1014
+            this param would be ignored, if the folded set as False.
+        folded : bool, optional
+            which generate fragment based on unfolded fingerprint, by default True.
         maxFragment : bool, optional
-            whether only return the max fragment of each atom, by default False
+            Whether only return the maximum fragment at a center atom, by default True
         nJobs : int, optional
-            The number of CPUs to use to do the computation
-            The default is 1
-
-        Returns
-        -------
-        None.
-
+            The number of CPUs to use to do the computation, by default 1
         """
         # self.mols = mols if isinstance(mols, Iterable) else (mols, )
         self.nBits = nBits if folded else None
@@ -75,15 +65,21 @@ class Circular(object):
         self.matrix = pd.DataFrame()
 
     def GetCircularFragmentLib(self, mols, svg=False):
-        """
-        Calculate morgan fingerprint and return the info of NonzeroElements
+        """Calculate circular fragments
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            The compounds used to obtain circular fragments.
+        svg : bool, optional
+            Whether output with a svg image, by default False
 
         Returns
         -------
-        bitInfo : list of dict
-            fragment bit info.
-
-        """
+        fragments : list
+            Fragments calculated, each element is a tuple 
+            return from GetCircularFragment() function
+        """        
         func = partial(GetCircularFragment,
                        minRadius=self.minRadius,
                        maxRadius=self.maxRadius,
@@ -104,12 +100,18 @@ class Circular(object):
 
     def GetCircularMatrix(self, mols, svg=False):
         """return circular matrix
+    
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            The compounds used to obtain circular fragments matrix
+        svg : bool, optional
+            Whether output with a svg image, by default False
 
         Returns
         -------
         pandas.core.frame.DataFrame
-            the fragment matrix of molecules
-
+            The fragment matrix of molecules
         """
         fragments = self.GetCircularFragmentLib(mols, svg=svg)
         # pool.close()
@@ -142,36 +144,30 @@ class Circular(object):
 
 
 class Path(object):
-
+    """Calculte path-based fragments and obtain matrix  
+    """    
     def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
-                 nJobs=1, maxFragment=True):
-        """
-        Init
+                 maxFragment=True, nJobs=1):
+        
+        """Initialization
 
         Parameters
         ----------
-        mols : a list of rdkit.Chem.rdchem.Mol
-            the aim molecule library.
         minPath : int, optional
-            minimum number of bonds to include in the subgraphs. The default is 1.
+            The probable minimum length of path-based fragment, by default 1
         maxPath : int, optional
-            maximum number of bonds to include in the subgraphs. The default is 1.
+            The probable maximum length of path-based fragment, by default 7
         nBits : int, optional
-            the number of bit of daylight. The default is 2048.
+            the number of bit of morgan, by default 1014
             this param would be ignored, if the folded set as False.
         folded : bool, optional
-            which generate fragment based on sparse fingerprint. 
-            The default is True.
+            which generate fragment based on unfolded fingerprint, by default True.
+        maxFragment : bool, optional
+            Whether only return the maximum fragment at a center atom, by default True
         nJobs : int, optional
-            The number of CPUs to use to do the computation
-            The default is 1
-
-        Returns
-        -------
-        None.
-
+            The number of CPUs to use to do the computation, by default 1
         """
         self.minPath = minPath
         self.maxPath = maxPath
@@ -183,14 +179,19 @@ class Path(object):
         self.matrix = pd.DataFrame()
 
     def GetPathFragmentLib(self, mols, svg=False):
-        """return the info of path bit info
+        """Calculate path-based fragments
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            The compounds used to obtain path-based fragment
+        svg : bool, optional
+            Whether output with a svg image, by default False
 
         Returns
         -------
-        fpInfo : list of tuple
-            in each tuple, the firsrt element is fingerprint,
-            the second is bit info.
-
+        fragments : list
+            Fragments calculated, each element is returned from GetPathFragment() function
         """
         mols = mols if isinstance(mols, Iterable) else (mols,)
         func = partial(GetPathFragment,
@@ -210,7 +211,20 @@ class Path(object):
         return bitInfo
 
     def GetPathMatrix(self, mols, svg=False):
+        """return path-based matrix
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            The compounds used to obtain path-based matrix
+        svg : bool, optional
+            Whether output with a svg image, by default False
+
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+            the fragment matrix of molecules
+        """
         fragments = self.GetPathFragmentLib(mols, svg=svg)
         # pool.close()
         # pool.join()
@@ -238,14 +252,15 @@ class Path(object):
 
 
 class FunctionGroup(object):
-
+    """Calculte function-group fragments and obtain matrix  
+    """    
     def __init__(self, nJobs=1):
-        """Init
+        """Initialization
 
         Parameters
         ----------
-        mols : a list of rdkit.Chem.rdchem.Mol
-            the aim molecule library.
+        nJobs : int, optional
+            The number of CPUs to use to do the computation, by default 1
         """
         self.nJobs = nJobs
         self.fgs = None
@@ -253,7 +268,20 @@ class FunctionGroup(object):
         self.matrix = pd.DataFrame()
 
     def GetFunctionGroupFragmentLib(self, mols, svg=False):
+        """Calculate function-group fragments
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            The compounds used to obtain function-group fragment
+        svg : bool, optional
+            Whether output with a svg image, by default False
+
+        Returns
+        -------
+        fragments : list
+            Fragments calculated, each element is rerurned from GetFunctionGroupFragment() function
+        """
         mols = mols if isinstance(mols, Iterable) else (mols,)
         func = partial(GetFunctionGroupFragment, svg=svg)
         pool = Pool(self.nJobs)
@@ -263,7 +291,20 @@ class FunctionGroup(object):
         return self.fgs
 
     def GetFunctionGroupsMatrix(self, mols, svg=False):
+        """return function-group matrix
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            The compounds used to obtain function-group matrix
+        svg : bool, optional
+            Whether output with a svg image, by default False
+
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+            the fragment matrix of molecules
+        """
         if not self.fgs:
             fgs = self.GetFunctionGroupFragmentLib(mols, svg)
         else:
@@ -311,12 +352,10 @@ if '__main__' == __name__:
 
     mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    # circular = Circular(folded=False, maxRadius=3,
-    #                     minRadius=1, maxFragment=True)
-    # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
-    # print(circular_matrix)
-    # circular_matrix.insert(0, 'SMILES', smis)
-    # circular_matrix.to_csv(r'C:\Users\0720\Desktop\py_work\pySmash\tests\Ames\data0709.csv', index=False)
+    circular = Circular(folded=False, maxRadius=3,
+                        minRadius=1, maxFragment=True)
+    fragments = circular.GetCircularFragmentLib(mols, svg=True)
+    circular_matrix = circular.GetCircularMatrix(mols, svg=True)
 
     # path = Path(minPath=1, maxPath=3)
     # path_frag = path.GetPathMatrix(mols, svg=True)
@@ -324,6 +363,7 @@ if '__main__' == __name__:
     # path_matrix = path.GetPathMatrix()
     # print(path_matrix.shape)
 
-    funcgroup = FunctionGroup()
-    print(funcgroup.GetFunctionGroupsMatrix(mols, svg=False))
-    print(funcgroup.substructure)
+    # funcgroup = FunctionGroup()
+    # print(funcgroup.GetFunctionGroupsMatrix(mols, svg=False))
+    # print(funcgroup.substructure)
+    print('Done!!')

@@ -25,23 +25,9 @@ __all__ = ['GetFoldedCircularFragment',
            'GetCircularFragment']
 
 
-def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=True, svg=False):
-    """dispose the bitinfo retrived from
-    GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
-
-    Parameters
-    ----------
-    bitInfo : dict
-        the key of dict is the number of bit (count from 0),
-        and value is a tuple, the first one is
-        the ceter atom, the second is the radius.
-    maxFragment : bool, optional
-        whether only return the max fragment of each atom, by default False
-
-    Returns
-    -------
-    dict
-        disposed bitinfo
+def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True, svg=False):
+    """Dispose the bitinfo retrived from GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
+    *internal only*
     """
     idxAll = list(bitInfo.keys())
 
@@ -62,7 +48,8 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=3, maxFragment=True, svg=Fal
 
         if r >= minRadius:
             smi, svgImg = DrawMorganEnv(mol, a, r)
-            fragments[idx] = (smi, svgImg.replace('\n','')) if svg else smi
+            fragments[idx] = (smi, svgImg.replace(
+                '\n', '')) if svg else (smi, )
         else:
             pass
 
@@ -73,6 +60,9 @@ def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=T
                   aromaticColor=(0.9, 0.9, 0.2), ringColor=(0.8, 0.8, 0.8),
                   centerColor=(0.6, 0.6, 0.9), extraColor=(0.9, 0.9, 0.9), drawOptions=None,
                   **kwargs):
+    """Get SMARTS and SVG image from given ceten and radius
+    *internal only*
+    """
     menv = _getMorganEnv(mol, atomId, radius, baseRad, aromaticColor, ringColor, centerColor,
                          extraColor, **kwargs)
 
@@ -99,30 +89,32 @@ def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=T
     return subMol, drawer.GetDrawingText()
 
 
-def GetFoldedCircularFragment(mol,
-                              minRadius=3, maxRadius=6, 
-                              nBits=1024, maxFragment=True, 
+def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
+                              nBits=1024, maxFragment=True,
                               svg=False):
-    """Get folded circular fragment under specific radius
+    """Get folded circular fragment
 
     Parameters
     ----------
-    mol : rdkit.Chem.rdchem.Mol
-        the aim molecule.
-    radius : int, optional
-        the radius of circular fingerprints. The default is 2.
-    nBits : int, optional
-        the number of bit of morgan. The default is 1024.
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
+    minRadius : int, optional
+        The probable minimum radius of circular fragment, by default 1
+    maxRadius : int, optional
+        The probable maximum radius of circular fragment, by default 2
+    nBits : int, optional, 
+        the number of bit of morgan, by default 1014
     maxFragment : bool, optional
-        whether only return the max fragment of each atom, by default False
+        Whether only return the maximum fragment at a center atom, by default True
+    svg : bool, optional
+        Whether output with a svg image, by default False
 
     Returns
     -------
-    dict
-        the key of dict is the number of bit (count from 0), 
-        and value is a tuple, the first one is 
-        the ceter atom, the second is the radius.
-
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     bitInfo = {}
     fp = GetMorganFingerprintAsBitVect(mol,
@@ -130,65 +122,74 @@ def GetFoldedCircularFragment(mol,
                                        nBits=nBits,
                                        bitInfo=bitInfo)
 
-    fragments = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment, svg)
+    fragments = _DisposeCircularBitInfo(
+        mol, bitInfo, minRadius, maxFragment, svg)
     return fragments
 
 
-def GetUnfoldedCircularFragment(mol, minRadius=3, maxRadius=6, maxFragment=True, svg=False):
-    """Get unfolded circular fragment under specific radius
+def GetUnfoldedCircularFragment(mol, minRadius=1, maxRadius=2,
+                                maxFragment=True, svg=False):
+    """Get unfolded circular fragment
 
     Parameters
     ----------
-    mol : rdkit.Chem.rdchem.Mol
-        the aim molecule.
-    radius : int, optional
-        the radius of circular fingerprints. The default is 2.
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
+    minRadius : int, optional
+        The probable minimum radius of circular fragment, by default 1
+    maxRadius : int, optional
+        The probable maximum radius of circular fragment, by default 2
     maxFragment : bool, optional
-        whether only return the max fragment of each atom, by default False
+        Whether only return the maximum fragment at a center atom, by default True
+    svg : bool, optional
+        Whether output with a svg image, by default False
 
     Returns
     -------
-    bi : dict
-        the key of dict is the number of bit (count from 0), 
-        and value is a tuple of tuple, in each tuple element the first one is 
-        the ceter atom, the second is the radius.
-
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     bitInfo = {}
     fp = GetMorganFingerprint(mol,
                               radius=maxRadius,
                               bitInfo=bitInfo)
 
-    fragments = _DisposeCircularBitInfo(mol, bitInfo, minRadius, maxFragment, svg)
+    fragments = _DisposeCircularBitInfo(
+        mol, bitInfo, minRadius, maxFragment, svg)
     return fragments
 
 
-def GetCircularFragment(mol,
-                        maxRadius=6, minRadius=3,
+def GetCircularFragment(mol, minRadius=1, maxRadius=2,
                         nBits=1024, folded=False,
                         maxFragment=True, svg=False):
-    """Get circular fragment under specific radius
+    """Get circular fragment
 
     Parameters
     ----------
-    mol : rdkit.Chem.rdchem.Mol
-        the aim molecule.
-    maxRadius : int, optional
-        the maximum radius of circular fragment, by default 2
+    mol : dkit.Chem.rdchem.Mol object
+        Compound to be Calculated
     minRadius : int, optional
-        the minimum radius of circular fragment, by default 1
+        The probable minimum radius of circular fragment, by default 1
+    maxRadius : int, optional
+        The probable maximum radius of circular fragment, by default 2
     nBits : int, optional
-        the deminision of fragment folded, by default 1024,
-        this parameter would be ignored if folded set as False
+        the number of bit of morgan, by default 1014
+        this param would be ignored, if the folded set as False.
     folded : bool, optional
-        whether hash the fragment, by default True
+        which generate fragment based on unfolded fingerprint, by default True.
     maxFragment : bool, optional
-        whether only return the max fragment of each atom, by default False
+        Whether only return the maximum fragment at a center atom, by default True
+    nJobs : int, optional
+        The number of CPUs to use to do the computation, by default 1
 
     Returns
     -------
-    substrcutures : list
-        circular fragment with specific radius
+    fragments : tuple
+        The first element is the ID of all fragments generated,
+        and the second one is a dict whose key is the ID of output fragments,
+        value is corresponding SMARTS and svg string (is svg set as True)
     """
     if folded:
         fragments = GetFoldedCircularFragment(mol,
@@ -208,7 +209,4 @@ if '__main__' == __name__:
 
     fragments = GetCircularFragment(
         mol, maxRadius=3, minRadius=1, maxFragment=False, svg=True)
-    print(fragments[1])
-
-
-
+    print(fragments)

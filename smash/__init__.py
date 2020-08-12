@@ -41,7 +41,7 @@ except:
 class NotFittedError(Exception):
     pass
 
-    
+
 def Pvalue(n, m, ns, ms):
     """Get P-value.
 
@@ -74,12 +74,13 @@ def Pvalue(n, m, ns, ms):
 
 class BaseLearner:
     """Base class for all learner in pysamsh.
-    """    
+    """
+
     def __init__(self):
         """Initialization.
-        """        
-        self.meanPvalue = None
-        self.meanMatrix = None
+        """
+        self.sigPvalue = None
+        self.sigMatrix = None
 
     def GetMatrix(self, mols, **kwgrs):
         """Get the matrix of fragment of mol library.
@@ -88,13 +89,12 @@ class BaseLearner:
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
             compounds, which have aspecific endpoint label, used to obtain significant fragments.
-        """        
+        """
 
     def fit(self, mols,
             labels, aimLabel=1,
-            minNum=5, minRatio=0.4, 
-            pCutoff=0.05, accCutoff=None, 
-            Bonferroni=False, svg=True):
+            minNum=5, pCutoff=0.05,
+            accCutoff=None, Bonferroni=False, svg=True):
         """Learning from given database which have aspecific endpoint label.
 
         Parameters
@@ -107,8 +107,6 @@ class BaseLearner:
             The label to be regarded as activity label (class labels in classification), by default 1
         minNum : int, optional
             The minimum frequency a fragment required, by default 5
-        minRatio : float, optional
-            The minimum ratio a fragment required , by default 0.4
         pCutoff : float, optional
             The pvalue cutoff, a fragment would be regarded as significant 
             if its pvalue below pCutoff, The minimum frequency a fragment requiredby default 0.05
@@ -122,8 +120,8 @@ class BaseLearner:
         Returns
         -------
         smash.BaseLearner
-            A fitted learner, used predict() method can predict molecules without label 
-        """        
+            A fitted learner, used predict() method can predict molecules without known label 
+        """
         matrix = self.GetMatrix(mols, svg=svg)
 
         bo = (matrix.sum(axis=0) >= minNum).values
@@ -132,7 +130,7 @@ class BaseLearner:
         n = len(labels)
         m = (labels == aimLabel).sum()
 
-        meanPvalue = {}
+        sigPvalue = {}
         for col, val in matrix.iteritems():
 
             ns = val.sum()
@@ -140,48 +138,73 @@ class BaseLearner:
 
             pvalue = sum(Pvalue(n, m, ns, ms))
             if pvalue <= pCutoff:
-                meanPvalue[col] = pvalue
+                sigPvalue[col] = pvalue
 
-        meanPvalue = pd.DataFrame(meanPvalue, index=['Pvalue']).T
+        sigPvalue = pd.DataFrame(sigPvalue, index=['Pvalue']).T
 
-        meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
-        meanPvalue['Total'] = meanMatrix.sum(axis=0)
-        meanPvalue['Hitted'] = meanMatrix[labels == 1].sum(axis=0)
-        meanPvalue['Accuracy'] = meanPvalue.Hitted/meanPvalue.Total
-        meanPvalue['Coverage'] = meanPvalue['Hitted']/m
+        sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
+        sigPvalue['Total'] = sigMatrix.sum(axis=0)
+        sigPvalue['Hitted'] = sigMatrix[labels == 1].sum(axis=0)
+        sigPvalue['Accuracy'] = sigPvalue.Hitted/sigPvalue.Total
+        sigPvalue['Coverage'] = sigPvalue['Hitted']/m
 
         if accCutoff:
-            meanPvalue = meanPvalue[meanPvalue.Accuracy >= accuracy]
-            meanMatrix = matrix.reindex(meanPvalue.index, axis=1)
+            sigPvalue = sigPvalue[sigPvalue.Accuracy >= accCutoff]
+            sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
         else:
             pass
 
         if Bonferroni:
-            meanPvalue['Pvalue'] = meanPvalue.Pvalue.values * len(meanPvalue)
-            meanPvalue = meanPvalue[meanPvalue.Pvalue <= pCutoff]
+            sigPvalue['Pvalue'] = sigPvalue.Pvalue.values * len(sigPvalue)
+            sigPvalue = sigPvalue[sigPvalue.Pvalue <= pCutoff]
         else:
             pass
 
-        self.substructure = self.substructure.reindex(meanPvalue.index)
-        meanPvalue = pd.concat(
-            (meanPvalue, self.substructure), axis=1, sort=False)
-        self.meanPvalue, self.meanMatrix = meanPvalue, meanMatrix
+        self.substructure = self.substructure.reindex(sigPvalue.index)
+        sigPvalue = pd.concat(
+            (sigPvalue, self.substructure), axis=1, sort=False)
+        self.sigPvalue, self.sigMatrix = sigPvalue, sigMatrix
         return self
 
     def predict(self, mols):
-        if self.meanPvalue is None or self.meanMatrix is None:
+        """Predict molecules without known label 
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
+            Compounds to be predicted
+
+        Returns
+        -------
+        y_pred : ndarray of shape (len(mols),)
+            The predicted label
+        predMatrix : pandas.core.frame.DataFrame
+            The predictd matrix 
+
+        Raises
+        ------
+        NotFittedError
+            Judge a learner whether was fitted
+        """
+        if self.sigPvalue is None or self.sigMatrix is None:
             raise NotFittedError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
         predMatrix = self.GetMatrix(mols, svg=True)
-        cols = set(predMatrix.columns) & set(self.meanPvalue.index)
+        cols = set(predMatrix.columns) & set(self.sigPvalue.index)
         predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
-        y_pred = (predMatrix.sum(axis=1) > 0) + 0
+        y_pred = ((predMatrix.sum(axis=1) > 0) + 0).values
 
-        return y_pred.values, predMatrix
+        return y_pred, predMatrix
 
-    def savePvalue(self, file):
+    def savePvalue(self, file='./pvalue.html'):
+        """Save pvalue result
 
+        Parameters
+        ----------
+        file : str, optional
+            The path to save result, by default './pvalue.html'
+        """
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
         html_string = """<html>
@@ -214,69 +237,167 @@ class BaseLearner:
             %s
         </body>
     </html>"""
-        html = html_string%(self.meanPvalue.to_html(classes='mystyle', escape=False))
+        html = html_string % (self.sigPvalue.to_html(
+            classes='mystyle', escape=False))
         with open(file, 'w') as f:
             f.write(html)
         f.close()
         return html
 
-    def saveModel(self, file):
+    def saveModel(self, file='./learner.pkl'):
+        """Save fitted learner
 
-        with bz2.BZ2File(file + '.pbz2', 'w') as f: 
+        Parameters
+        ----------
+        file : str, optional
+            The path to save fitted learner, by default './learner.pkl'
+        """
+        with bz2.BZ2File(file + '.pbz2', 'w') as f:
             cPickle.dump(self, f)
         f.close()
-    
 
 
 class CircularLearner(BaseLearner, Circular):
+    """Circular fragment leanrner
 
-    def __init__(self,
-                 maxRadius=2, minRadius=1,
+    Parameters
+    ----------
+    BaseLearner : smash.BaseLearner
+        The base learner
+    Circular : smash.fragments.Circular
+        The class to obtain circular fragment matrix
+    """
+
+    def __init__(self, minRadius=1, maxRadius=2,
                  nBits=1024, folded=False,
-                 maxFragment=True, nJobs=1,
-                 ):
-        """
-        """
+                 maxFragment=True, nJobs=1):
+        """Initialization
+
+        Parameters
+        ----------
+        minRadius : int, optional
+            The probable minimum radius of circular fragment, by default 1
+        maxRadius : int, optional
+            The probable maximum radius of circular fragment, by default 2
+        nBits : int, optional
+            the number of bit of morgan, by default 1014
+            this param would be ignored, if the folded set as False.
+        folded : bool, optional
+            which generate fragment based on unfolded fingerprint, by default True.
+        maxFragment : bool, optional
+            Whether only return the maximum fragment at a center atom, by default True
+        nJobs : int, optional
+            The number of CPUs to use to do the computation, by default 1
+        """                 
         Circular.__init__(self,
                           maxRadius, minRadius,
                           nBits, folded,
                           maxFragment, nJobs)
 
     def GetMatrix(self, mols, **kwgrs):
+        """Rewrite method
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            compounds, which have aspecific endpoint label, used to obtain significant fragments.
+
+        Returns
+        -------
+        maxtrix : pandas.core.frame.DataFrame
+            The calculated fragment matrix
+        """        
         matrix = self.GetCircularMatrix(mols, **kwgrs)
         return matrix
 
 
 class PathLeanrner(BaseLearner, Path):
+    """Path-Based fragment leanrner
 
+    Parameters
+    ----------
+    BaseLearner : smash.BaseLearner
+        The base learner
+    Path : smash.fragments.Path
+        The class to obtain path-based fragment matrix
+    """    
     def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
                  nJobs=1, maxFragment=True):
-        """
-        """
-        Path.__init__(self,
-                      minPath, maxPath,
-                      nBits, folded, nJobs,
-                      maxFragment)
+        """Initialization
+
+        Parameters
+        ----------
+        minPath : int, optional
+            The probable minimum length of path-based fragment, by default 1
+        maxPath : int, optional
+            The probable maximum length of path-based fragment, by default 7
+        nBits : int, optional
+            the number of bit of morgan, by default 1014
+            this param would be ignored, if the folded set as False.
+        folded : bool, optional
+            which generate fragment based on unfolded fingerprint, by default True.
+        maxFragment : bool, optional
+            Whether only return the maximum fragment at a center atom, by default True
+        nJobs : int, optional
+            The number of CPUs to use to do the computation, by default 1
+        """        
+        Path.__init__(self, minPath, maxPath,
+                      nBits, folded, nJobs, maxFragment)
 
     def GetMatrix(self, mols, **kwgrs):
+        """Rewrite method
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            compounds, which have aspecific endpoint label, used to obtain significant fragments.
+
+        Returns
+        -------
+        maxtrix : pandas.core.frame.DataFrame
+            The calculated fragment matrix
+        """
         matrix = self.GetPathMatrix(mols, **kwgrs)
         return matrix
 
 
 class FunctionGroupLearner(BaseLearner, FunctionGroup):
+    """Function-Group fragment leanrner
 
+    Parameters
+    ----------
+    BaseLearner : smash.BaseLearner
+        The base learner
+    FunctionGroup : smash.fragments.FunctionGroup
+        The class to obtain Function-Group fragment matrix
+    """
     def __init__(self, nJobs=1):
+        """Initialization
 
+        Parameters
+        ----------
+        nJobs : int, optional
+            The number of CPUs to use to do the computation, by default 1
+        """
         FunctionGroup.__init__(self, nJobs)
 
     def GetMatrix(self, mols, **kwgrs):
+        """Rewrite method
 
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            compounds, which have aspecific endpoint label, used to obtain significant fragments.
+
+        Returns
+        -------
+        maxtrix : pandas.core.frame.DataFrame
+            The calculated fragment matrix
+        """
         matrix = self.GetFunctionGroupsMatrix(mols, **kwgrs)
-        return matrix 
+        return matrix
 
 
 if '__main__' == __name__:
@@ -297,14 +418,14 @@ if '__main__' == __name__:
 
     circular.fit(mols, y_true)
     y_pred, predMatrix = circular.predict(mols)
-    print(y_pred)
-    print(circular.meanPvalue.shape)
+    print(type(y_pred))
+    print(type(predMatrix))
 
     # path = PathLeanrner(minPath=1,
     #                     maxPath=7, nJobs=4,
     #                     maxFragment=True)
     # path.fit(mols, y_true, svg=True)
-    # print(path.meanPvalue)
+    # print(path.sigPvalue)
 
     # fg = FunctionGroupLearner(nJobs=4)
 
