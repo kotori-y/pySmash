@@ -143,7 +143,7 @@ class Circular:
         return self.matrix
 
 
-class Path(object):
+class Path:
     """Calculte path-based fragments and obtain matrix  
     """    
     def __init__(self,
@@ -251,7 +251,7 @@ class Path(object):
         return self.matrix
 
 
-class FunctionGroup(object):
+class FunctionGroup:
     """Calculte function-group fragments and obtain matrix  
     """    
     def __init__(self, nJobs=1):

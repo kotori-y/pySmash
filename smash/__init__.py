@@ -108,8 +108,7 @@ class BaseLearner:
         minNum : int, optional
             The minimum frequency a fragment required, by default 5
         pCutoff : float, optional
-            The pvalue cutoff, a fragment would be regarded as significant 
-            if its pvalue below pCutoff, The minimum frequency a fragment requiredby default 0.05
+            The pvalue cutoff, a fragment would be regarded as significant if its pvalue below pCutoff, by default 0.05
         accCutoff : float, optional
             The minimum accraucy lead by a fragment judge, by default None
         Bonferroni : bool, optional
@@ -123,7 +122,6 @@ class BaseLearner:
             A fitted learner, used predict() method can predict molecules without known label 
         """
         matrix = self.GetMatrix(mols, svg=svg)
-
         bo = (matrix.sum(axis=0) >= minNum).values
         matrix = matrix.loc[:, bo]
 
@@ -149,8 +147,7 @@ class BaseLearner:
         sigPvalue['Coverage'] = sigPvalue['Hitted']/m
 
         if accCutoff:
-            sigPvalue = sigPvalue[sigPvalue.Accuracy >= accCutoff]
-            sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
+            sigPvalue = sigPvalue[sigPvalue.Accuracy >= accCutoff]          
         else:
             pass
 
@@ -163,6 +160,10 @@ class BaseLearner:
         self.substructure = self.substructure.reindex(sigPvalue.index)
         sigPvalue = pd.concat(
             (sigPvalue, self.substructure), axis=1, sort=False)
+        
+        sigPvalue = sigPvalue.sort_values('Pvalue')
+        sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
+
         self.sigPvalue, self.sigMatrix = sigPvalue, sigMatrix
         return self
 
@@ -290,7 +291,7 @@ class CircularLearner(BaseLearner, Circular):
             The number of CPUs to use to do the computation, by default 1
         """                 
         Circular.__init__(self,
-                          maxRadius, minRadius,
+                          minRadius, maxRadius, 
                           nBits, folded,
                           maxFragment, nJobs)
 
@@ -324,7 +325,7 @@ class PathLeanrner(BaseLearner, Path):
     def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
-                 nJobs=1, maxFragment=True):
+                 maxFragment=True, nJobs=1):
         """Initialization
 
         Parameters
@@ -418,8 +419,9 @@ if '__main__' == __name__:
 
     circular.fit(mols, y_true)
     y_pred, predMatrix = circular.predict(mols)
-    print(type(y_pred))
-    print(type(predMatrix))
+    print(circular.sigMatrix)
+    # print(type(y_pred))
+    # print(type(predMatrix))
 
     # path = PathLeanrner(minPath=1,
     #                     maxPath=7, nJobs=4,
