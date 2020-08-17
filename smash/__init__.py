@@ -147,7 +147,7 @@ class BaseLearner:
         sigPvalue['Coverage'] = sigPvalue['Hitted']/m
 
         if accCutoff:
-            sigPvalue = sigPvalue[sigPvalue.Accuracy >= accCutoff]          
+            sigPvalue = sigPvalue[sigPvalue.Accuracy >= accCutoff]
         else:
             pass
 
@@ -160,7 +160,7 @@ class BaseLearner:
         self.substructure = self.substructure.reindex(sigPvalue.index)
         sigPvalue = pd.concat(
             (sigPvalue, self.substructure), axis=1, sort=False)
-        
+
         sigPvalue = sigPvalue.sort_values('Pvalue')
         sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
 
@@ -192,8 +192,9 @@ class BaseLearner:
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
         predMatrix = self.GetMatrix(mols, svg=True)
-        cols = set(predMatrix.columns) & set(self.sigPvalue.index)
-        predMatrix = predMatrix.loc[:, cols].reset_index(drop=True)
+        # cols = set(predMatrix.columns) & set(self.sigPvalue.index)
+        predMatrix = predMatrix.reindex(
+            self.sigPvalue.index, axis=1).reset_index(drop=True).fillna(0)
         y_pred = ((predMatrix.sum(axis=1) > 0) + 0).values
 
         return y_pred, predMatrix
@@ -289,11 +290,10 @@ class CircularLearner(BaseLearner, Circular):
             Whether only return the maximum fragment at a center atom, by default True
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
-        """                 
-        Circular.__init__(self,
-                          minRadius, maxRadius, 
-                          nBits, folded,
-                          maxFragment, nJobs)
+        """
+        Circular.__init__(self, minRadius=minRadius, maxRadius=maxRadius,
+                          nBits=nBits, folded=folded,
+                          maxFragment=maxFragment, nJobs=nJobs)
 
     def GetMatrix(self, mols, **kwgrs):
         """Rewrite method
@@ -307,7 +307,7 @@ class CircularLearner(BaseLearner, Circular):
         -------
         maxtrix : pandas.core.frame.DataFrame
             The calculated fragment matrix
-        """        
+        """
         matrix = self.GetCircularMatrix(mols, **kwgrs)
         return matrix
 
@@ -321,7 +321,8 @@ class PathLeanrner(BaseLearner, Path):
         The base learner
     Path : smash.fragments.Path
         The class to obtain path-based fragment matrix
-    """    
+    """
+
     def __init__(self,
                  minPath=1, maxPath=7,
                  nBits=1024, folded=False,
@@ -343,7 +344,7 @@ class PathLeanrner(BaseLearner, Path):
             Whether only return the maximum fragment at a center atom, by default True
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
-        """        
+        """
         Path.__init__(self, minPath, maxPath,
                       nBits, folded, nJobs, maxFragment)
 
@@ -374,6 +375,7 @@ class FunctionGroupLearner(BaseLearner, FunctionGroup):
     FunctionGroup : smash.fragments.FunctionGroup
         The class to obtain Function-Group fragment matrix
     """
+
     def __init__(self, nJobs=1):
         """Initialization
 
@@ -419,9 +421,9 @@ if '__main__' == __name__:
 
     circular.fit(mols, y_true)
     y_pred, predMatrix = circular.predict(mols)
-    print(circular.sigMatrix)
+    # print(circular.sigMatrix)
     # print(type(y_pred))
-    # print(type(predMatrix))
+    print(type(predMatrix))
 
     # path = PathLeanrner(minPath=1,
     #                     maxPath=7, nJobs=4,

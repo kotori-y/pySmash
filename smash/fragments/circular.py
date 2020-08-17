@@ -34,9 +34,10 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True, svg=Fal
     if maxFragment:
         bitInfo = [[atom[0], atom[1], idx]
                    for idx, atomInfo in bitInfo.items() for atom in atomInfo]
-        bitInfo = pd.DataFrame(bitInfo).groupby(0).max().drop_duplicates(2)
-        idxFrag = bitInfo[2].tolist()
-        bitInfo = tuple(zip(bitInfo.index, bitInfo[1]))
+        bitInfo = pd.DataFrame(bitInfo, columns=['atom', 'radius', 'idx'])
+        bitInfo = bitInfo.loc[bitInfo.groupby('atom').radius.idxmax()]
+        idxFrag = bitInfo['idx'].to_list()
+        bitInfo = tuple(zip(bitInfo.atom.to_list(), bitInfo.radius.to_list()))
 
     else:
         idxFrag = idxAll
@@ -208,5 +209,5 @@ if '__main__' == __name__:
     mol = Chem.MolFromSmiles('C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1')
 
     fragments = GetCircularFragment(
-        mol, maxRadius=3, minRadius=1, maxFragment=False, svg=True)
+        mol, maxRadius=4, minRadius=1, maxFragment=False, svg=True)
     print(fragments)
