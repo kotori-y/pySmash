@@ -520,10 +520,10 @@ class SmashGui(Tk):
 
         lblRatio = Label(self.fitTab, text='minRatio', bg=color,
                          font=('Times New Roman', 13))
-        lblRatio.place(x=450, y=180)
+        # lblRatio.place(x=450, y=180)
         self.minRatio = tk.DoubleVar(value=0.4)
         txtminRatio = Entry(self.fitTab, width=7, textvariable=self.minRatio)
-        txtminRatio.place(x=520, y=180)
+        # txtminRatio.place(x=520, y=180)
 
         lblPvalue = Label(self.fitTab, text='p-value', bg=color,
                           font=('Times New Roman', 13))
@@ -534,29 +534,29 @@ class SmashGui(Tk):
 
         lblAcc = Label(self.fitTab, text='minAcc', bg=color,
                        font=('Times New Roman', 13))
-        lblAcc.place(x=450, y=230)
+        lblAcc.place(x=450, y=180)
         self.minAcc = tk.DoubleVar(value=0.70)
         txtAcc = Entry(self.fitTab, width=7, textvariable=self.minAcc)
-        txtAcc.place(x=520, y=230)
+        txtAcc.place(x=520, y=180)
 
         lblnjobs = Label(self.fitTab, text='n_jobs', bg=color,
                          font=('Times New Roman', 13))
-        lblnjobs.place(x=320, y=280)
+        lblnjobs.place(x=390, y=280)
         self.n_jobs = tk.IntVar(value=1)
         txtnjobs = Entry(self.fitTab, width=7, textvariable=self.n_jobs)
-        txtnjobs.place(x=390, y=280)
+        txtnjobs.place(x=450, y=280)
 
         lblBon = Label(self.fitTab, text='Bonferroni',
                        font=('Times New Roman', 12),
                        bg=color)
-        lblBon.place(x=450, y=280)
+        lblBon.place(x=450, y=230)
 
         self.Bonferroni = tk.BooleanVar()
         cmbBon = ttk.Combobox(self.fitTab, width=4,
                               textvariable=self.Bonferroni)
         cmbBon['values'] = [False, True]
         cmbBon.current(0)
-        cmbBon.place(x=520, y=280)
+        cmbBon.place(x=520, y=230)
 
         ####################### Adjust Running Param Module#######################
 

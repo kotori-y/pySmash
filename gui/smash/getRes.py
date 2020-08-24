@@ -130,23 +130,23 @@ def getFingerprintRes(textPad, data, **kwgrs):
         model = FunctionGroupLearner(nJobs=n_jobs)
 
     model.fit(mols, labels,
-                aimLabel=aimLabel, minNum=minNum, pThreshold=pValue,
-                accuracy=accuracy, Bonferroni=Bonferroni,)
+                aimLabel=aimLabel, minNum=minNum, pCutoff=pValue,
+                accCutoff=accuracy, Bonferroni=Bonferroni,)
 
         # print(subMatrix)
-    subPvalue, subMatrix = model.meanPvalue, model.meanMatrix
+    subPvalue, subMatrix = model.sigPvalue, model.sigMatrix
     add('Successed!\n\n')
     ############# Obtain Fingerprint Matrix #############
 
     ############# Disposed with run param #############
-    add('Disposed with minRatio... ')
-    bo = (subMatrix[labels == aimLabel].sum(
-        axis=0)/subMatrix.sum(axis=0)) >= minRatio
-    subMatrix = subMatrix.loc[:, bo.values]
-    subPvalue = subPvalue.reindex(subMatrix.columns)
-    # print(subMatrix)
-    # subMatrix['SMILES'] = smis
-    add('Successed!\n\n')
+    # add('Disposed with minRatio... ')
+    # bo = (subMatrix[labels == aimLabel].sum(
+    #     axis=0)/subMatrix.sum(axis=0)) >= minRatio
+    # subMatrix = subMatrix.loc[:, bo.values]
+    # subPvalue = subPvalue.reindex(subMatrix.columns)
+    # # print(subMatrix)
+    # # subMatrix['SMILES'] = smis
+    # add('Successed!\n\n')
     ############# Disposed with run param #############
 
     # ############# Calculate p-value #############
