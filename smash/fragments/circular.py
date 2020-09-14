@@ -68,7 +68,7 @@ def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=T
                          extraColor, **kwargs)
 
     submol = menv.submol
-    subMol = Chem.MolToSmiles(submol, canonical=True, isomericSmiles=False)
+    subMol = Chem.MolToSmiles(submol, isomericSmiles=False, allBondsExplicit=True, allHsExplicit=True)
     # Drawing
     if useSVG:
         drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
