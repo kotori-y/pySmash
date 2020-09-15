@@ -31,28 +31,19 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True, svg=Fal
     """
     idxAll = list(bitInfo.keys())
 
-    if maxFragment:
-        bitInfo = [[atom[0], atom[1], idx]
-                   for idx, atomInfo in bitInfo.items() for atom in atomInfo]
-        bitInfo = pd.DataFrame(bitInfo, columns=['atom', 'radius', 'idx'])
-        bitInfo = bitInfo.loc[bitInfo.groupby('atom').radius.idxmax()]
-        idxFrag = bitInfo['idx'].to_list()
-        bitInfo = tuple(zip(bitInfo.atom.to_list(), bitInfo.radius.to_list()))
-
-    else:
-        idxFrag = idxAll
-        bitInfo = tuple(map(lambda x: x[0], bitInfo.values()))
-
+    station = {}
     fragments = {}
-    for info, idx in zip(bitInfo, idxFrag):
-        a, r = info
+    for idx, pairs in bitInfo.items():
+        for (atom, radius) in pairs:
+            if radius >= minRadius and (not maxFragment or \
+                atom not in station or \
+                    station[atom]['radius'] < radius):
+                station[atom] = {'idx':idx, 'radius':radius}
 
-        if r >= minRadius:
-            smi, svgImg = DrawMorganEnv(mol, a, r)
-            fragments[idx] = (smi, svgImg.replace(
-                '\n', '')) if svg else (smi, )
-        else:
-            pass
+    for atom, vals in station.items():
+        idx, rad = vals.values()
+        sma, svgImg = DrawMorganEnv(mol, atom, rad)
+        fragments[vals['idx']] = (sma, svgImg) if svg else (sma, )
 
     return (idxAll, fragments)
 
@@ -87,7 +78,7 @@ def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=T
                         highlightBondColors=menv.bondColors, highlightAtomRadii=menv.highlightRadii,
                         **kwargs)
     drawer.FinishDrawing()
-    return subMol, drawer.GetDrawingText()
+    return subMol, drawer.GetDrawingText().replace('\n', '')
 
 
 def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
@@ -206,8 +197,9 @@ def GetCircularFragment(mol, minRadius=1, maxRadius=2,
 
 
 if '__main__' == __name__:
+
     mol = Chem.MolFromSmiles('C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1')
 
     fragments = GetCircularFragment(
-        mol, maxRadius=4, minRadius=1, maxFragment=False, svg=True)
-    print(fragments)
+        mol, maxRadius=4, minRadius=1, maxFragment=True, svg=False)
+    # print(fragments)
