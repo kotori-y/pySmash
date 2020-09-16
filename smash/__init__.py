@@ -84,7 +84,7 @@ class BaseLearner:
     def __init__(self):
         """Initialization.
         """
-        pass
+        self.sigFragments = None
 
     def GetMatrix(self, mols, **kwgrs):
         """Get the matrix of fragment of mol library.
@@ -191,14 +191,14 @@ class BaseLearner:
         NotFittedError
             Judge a learner whether was fitted
         """
-        if self.sigPvalue is None or self.sigMatrix is None:
+        if self.sigFragments is None:
             raise NotFittedError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
-        predMatrix = self.GetMatrix(mols, svg=True)
+        predMatrix, _ = self.GetMatrix(mols, svg=True)
         # cols = set(predMatrix.columns) & set(self.sigPvalue.index)
         predMatrix = predMatrix.reindex(
-            self.sigPvalue.index, axis=1).reset_index(drop=True).fillna(0)
+            self.sigFragments.keys(), axis=1).reset_index(drop=True).fillna(0)
         y_pred = ((predMatrix.sum(axis=1) > 0) + 0).values
 
         return y_pred, predMatrix
