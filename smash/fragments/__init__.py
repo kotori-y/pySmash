@@ -12,7 +12,7 @@ Created on Sun Jun 14 15:12:50 2020
 """
 
 
-from collections import ChainMap
+from collections import Counter
 from functools import partial
 from collections.abc import Iterable
 from multiprocessing import Pool
@@ -61,9 +61,10 @@ class Circular:
         self.minRadius = minRadius
         self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
-        self.substructure = pd.DataFrame()
-        self.matrix = pd.DataFrame()
-
+#        self.substructure = pd.DataFrame()
+#        self.matrix = pd.DataFrame()
+#        self.fragments = None
+    
     def GetCircularFragmentLib(self, mols, svg=False):
         """Calculate circular fragments
 
@@ -95,10 +96,16 @@ class Circular:
         pool.close()
         pool.join()
 
-        self.fragments = fragments
         return fragments
-
-    def GetCircularMatrix(self, mols, svg=False):
+    
+    def _getIdx(self, subArray, Array):
+        """
+        """
+        uni = set(Array)&set(subArray)
+        idx = [Array.index(x) for x in uni]
+        return idx
+    
+    def GetCircularMatrix(self, mols, minNum=None, svg=False):
         """return circular matrix
     
         Parameters
@@ -113,34 +120,37 @@ class Circular:
         pandas.core.frame.DataFrame
             The fragment matrix of molecules
         """
-        fragments = self.GetCircularFragmentLib(mols, svg=svg)
-        # pool.close()
-        # pool.join()
 
+        fragments = self.GetCircularFragmentLib(mols, svg=svg)
         unique = [bit for info in fragments for bit in info[1]]
+        
+        if minNum:
+            _all = [bit for info in fragments for bit in info[0]]
+            c = Counter(_all)
+            unique = [x for x in unique if c[x] >= minNum]
+            
+            
         unique = list(set(unique))
-        dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
         matrix = np.zeros((len(mols), num), dtype=np.int8)
-
-        for idx, arr in enumerate(matrix):
-            info = fragments[idx]
-            for frag in unique:
-                if frag in info[0]:
-                    arr[dic[frag]] = 1
-                    # if frag not in self.substructure:
-                        # self.substructure[frag] = {'SMARTS': info[1][0], 'SVG': info[1][1]} \
-                        #     if svg else {'SMARTS': info[1]}
-
-                        # colDict = ChainMap(*[info[1] for info in bitInfo])
-        self.matrix = pd.DataFrame(matrix, columns=unique)
+        
         fragments = pd.DataFrame(fragments)
+        subArray = fragments[0]
+        func = partial(self._getIdx, Array=unique)
+        pool = Pool(self.nJobs)
+        st = pool.map_async(func, subArray).get()
+        pool.close()
+        pool.join()
+        
+        for idx,arr in zip(st, matrix):
+            arr[idx]=1
+        matrix = pd.DataFrame(matrix, columns=unique)
+         
         substructure = {k:v for item in fragments[1].values for k,v in item.items()}
         idx = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        self.substructure = pd.DataFrame(substructure, index=idx).T
-        
-        return self.matrix
+        substructure = pd.DataFrame(substructure, index=idx).T
+        return matrix, substructure
 
 
 class Path:
@@ -334,28 +344,20 @@ class FunctionGroup:
 if '__main__' == __name__:
     freeze_support()
     from rdkit import Chem
+    import time
+    
+    data = pd.read_csv(r'..\..\tests\Carc\Carc.txt', sep='\t')
+    mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
+    # mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    smis = [
-        'C1=CC=CC(C(Br)C)=C1',
-        'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
-        'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
-        'C1=NC(CCN)=CN1',
-        'C1CCCC(CCO)C1',
-        'C1=CC=C2N=C(O)C=CC2=C1',
-        'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
-        'C1=C2N=CC=NC2=C2N=CNC2=C1',
-        'C1=C(O)C=CC(O)=C1',
-        'C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1',
-        'C1=CC=C2C(=O)C3C=CNC=3C(=O)C2=C1',
-        'C(OC)1=C(C)C=C2OC[C@]([H])3OC4C(C)=C(OC)C=CC=4C(=O)[C@@]3([H])C2=C1C',
-    ]
-
-    mols = [Chem.MolFromSmiles(smi) for smi in smis]
-
-    circular = Circular(folded=False, maxRadius=3,
-                        minRadius=1, maxFragment=True)
-    fragments = circular.GetCircularFragmentLib(mols, svg=True)
-    circular_matrix = circular.GetCircularMatrix(mols, svg=True)
+    start = time.clock()
+    circular = Circular(folded=False, maxRadius=7,
+                        minRadius=1, maxFragment=True,
+                        nJobs=20)
+    fragments = circular.GetCircularMatrix(mols, svg=True)
+    end = time.clock()
+    print(end - start)
+    # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
 
     # path = Path(minPath=1, maxPath=3)
     # path_frag = path.GetPathMatrix(mols, svg=True)
