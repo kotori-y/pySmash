@@ -203,7 +203,7 @@ class BaseLearner:
 
         return y_pred, predMatrix
 
-    def savePvalue(self, file='./pvalue.html'):
+    def savePvalue(self, sigPvalue, file='./pvalue.html'):
         """Save pvalue result
 
         Parameters
@@ -243,7 +243,7 @@ class BaseLearner:
             %s
         </body>
     </html>"""
-        html = html_string % (self.sigPvalue.to_html(
+        html = html_string % (sigPvalue.to_html(
             classes='mystyle', escape=False))
         with open(file, 'w') as f:
             f.write(html)
