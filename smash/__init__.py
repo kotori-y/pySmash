@@ -37,6 +37,8 @@ try:
 except:
     pd.set_option('display.max_colwidth', -1)
 
+from scipy.stats import binom
+
 
 class NotFittedError(Exception):
     pass
@@ -62,14 +64,17 @@ def Pvalue(n, m, ns, ms):
         use sum() function to get the pvalue.
 
     """
+    p_value = 0
     for i in range(ms, ns+1):
         numerator = Decimal(sc.math.factorial(float(ns)))
         denominatorA = Decimal(sc.math.factorial(
             float(i))) * Decimal(sc.math.factorial(float(ns-i)))
         denominatorB = (m/n)**float(i)
         denominatorC = (1 - (m/n))**(ns-i)
-        p_value = float(numerator/denominatorA) * denominatorB * denominatorC
-        yield p_value
+        val = float(numerator/denominatorA) * denominatorB * denominatorC
+        p_value += val
+
+    return p_value
 
 
 class BaseLearner:
@@ -79,8 +84,7 @@ class BaseLearner:
     def __init__(self):
         """Initialization.
         """
-        self.sigPvalue = None
-        self.sigMatrix = None
+        pass
 
     def GetMatrix(self, mols, **kwgrs):
         """Get the matrix of fragment of mol library.
@@ -121,25 +125,25 @@ class BaseLearner:
         smash.BaseLearner
             A fitted learner, used predict() method can predict molecules without known label 
         """
-        matrix = self.GetMatrix(mols, svg=svg)
-        bo = (matrix.sum(axis=0) >= minNum).values
-        matrix = matrix.loc[:, bo]
+        matrix, substructure = self.GetMatrix(mols, svg=svg, minNum=minNum)
 
         n = len(labels)
         m = (labels == aimLabel).sum()
+        p = m/n
 
-        sigPvalue = {}
-        for col, val in matrix.iteritems():
+        sigPvalue = pd.DataFrame(
+            {"ns": matrix.sum(),
+             "ms": matrix[labels == 1].sum()}
+        )
+        sigPvalue = sigPvalue.apply(
+            lambda x: sum(
+                binom.pmf(range(x['ms'], x['ns']+1), x['ns'], p)
+            ), axis=1
+        )
+    # print(sigPvalue)
+        sigPvalue = sigPvalue[sigPvalue <= pCutoff]
 
-            ns = val.sum()
-            ms = (val[labels == aimLabel] == 1).sum()
-
-            pvalue = sum(Pvalue(n, m, ns, ms))
-            if pvalue <= pCutoff:
-                sigPvalue[col] = pvalue
-
-        sigPvalue = pd.DataFrame(sigPvalue, index=['Pvalue']).T
-
+        sigPvalue = pd.DataFrame(sigPvalue, columns=['Pvalue'])
         sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
         sigPvalue['Total'] = sigMatrix.sum(axis=0)
         sigPvalue['Hitted'] = sigMatrix[labels == 1].sum(axis=0)
@@ -157,15 +161,15 @@ class BaseLearner:
         else:
             pass
 
-        self.substructure = self.substructure.reindex(sigPvalue.index)
+        substructure = substructure.reindex(sigPvalue.index)
         sigPvalue = pd.concat(
-            (sigPvalue, self.substructure), axis=1, sort=False)
+            (sigPvalue, substructure), axis=1, sort=False)
 
         sigPvalue = sigPvalue.sort_values('Pvalue')
         sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
 
-        self.sigPvalue, self.sigMatrix = sigPvalue, sigMatrix
-        return self
+#        self.sigPvalue, self.sigMatrix = sigPvalue, sigMatrix
+        return sigPvalue, sigMatrix
 
     def predict(self, mols):
         """Predict molecules without known label 
@@ -406,9 +410,11 @@ class FunctionGroupLearner(BaseLearner, FunctionGroup):
 if '__main__' == __name__:
     from rdkit import Chem
     from itertools import compress
+    import time
 
-    data = pd.read_csv(r'tests\Carc\Carc.txt', sep='\t')
-    # data = data.sample(n=100)
+    data = pd.read_csv(r'..\tests\carc\carc.txt', sep='\t')
+    # data = pd.read_csv(r'..\tests\agg\agg.csv', sep=',')
+#    data = data.sample(n=10000, replace=False)
 
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     bo = mols.notna().values
@@ -416,23 +422,11 @@ if '__main__' == __name__:
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
+    start = time.clock()
     circular = CircularLearner(minRadius=1, maxRadius=6,
-                               maxFragment=True, nJobs=4)
+                               maxFragment=True, nJobs=20)
 
-    circular.fit(mols, y_true)
-    y_pred, predMatrix = circular.predict(mols)
-    # print(circular.sigMatrix)
-    # print(type(y_pred))
-    print(type(predMatrix))
-
-    # path = PathLeanrner(minPath=1,
-    #                     maxPath=7, nJobs=4,
-    #                     maxFragment=True)
-    # path.fit(mols, y_true, svg=True)
-    # print(path.sigPvalue)
-
-    # fg = FunctionGroupLearner(nJobs=4)
-
-    # fg.fit(mols, y_true)
-    # print(fg.predict(mols)[-1])
-    # print('Done !!!')
+    sigPvalue, sigMatrix = circular.fit(mols, y_true)
+    print(sigMatrix)
+    end = time.clock()
+    print(end-start)
