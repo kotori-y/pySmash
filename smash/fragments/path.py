@@ -62,7 +62,7 @@ def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
     menv = _getRDKitEnv(mol, bondPath, baseRad, aromaticColor,
                         extraColor, nonAromaticColor, **kwargs)
     submol = menv.submol
-    subMol = Chem.MolToSmiles(submol, canonical=True, isomericSmiles=False)
+    subMol = Chem.MolToSmiles(submol, isomericSmiles=False)
 
     # Drawing
     if useSVG:
