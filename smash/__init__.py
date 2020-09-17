@@ -168,7 +168,8 @@ class BaseLearner:
         sigPvalue = sigPvalue.sort_values('Pvalue')
         sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
 
-#        self.sigPvalue, self.sigMatrix = sigPvalue, sigMatrix
+        self.sigFragments = sigPvalue.SMARTS.to_dict()
+        
         return sigPvalue, sigMatrix
 
     def predict(self, mols):
