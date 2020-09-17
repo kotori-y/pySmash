@@ -136,6 +136,7 @@ def GetFunctionGroupFragment(mol, svg=False):
 
 # extract also connected unmarked carbon atoms
     ifgs = []
+    st = []
     for g in groups:
         uca = set()
         for atomidx in g:
@@ -143,11 +144,13 @@ def GetFunctionGroupFragment(mol, svg=False):
                 if n.GetAtomicNum() == 6:
                     uca.add(n.GetIdx())
         fg = Chem.MolFragmentToSmiles(mol, g.union(uca), canonical=True)
-        if fg not in ifgs:
+        
+        if fg not in st:
             if svg:
                 ifgs.append((fg, _DisposedFgFragment(mol, fg)))
             else:
                 ifgs.append((fg, ))
+            st.append(fg)
     
     return ifgs
 
