@@ -185,8 +185,7 @@ class Path:
         self.folded = folded
         self.nJobs = nJobs if nJobs >= 1 else None
         self.maxFragment = maxFragment
-        self.substructure = pd.DataFrame()
-        self.matrix = pd.DataFrame()
+
 
     def GetPathFragmentLib(self, mols, svg=False):
         """Calculate path-based fragments
@@ -217,10 +216,17 @@ class Path:
         pool.close()
         pool.join()
 
-        self.bitInfo = bitInfo
         return bitInfo
-
-    def GetPathMatrix(self, mols, svg=False):
+    
+    def _getIdx(self, subArray, Array):
+        """
+        """
+        uni = set(Array) & set(subArray)
+        idx = [Array.index(x) for x in uni]
+#        print(idx)
+        return idx
+    
+    def GetPathMatrix(self, mols, minNum=None, svg=False):
         """return path-based matrix
 
         Parameters
@@ -236,29 +242,38 @@ class Path:
             the fragment matrix of molecules
         """
         fragments = self.GetPathFragmentLib(mols, svg=svg)
-        # pool.close()
-        # pool.join()
-
+        
         unique = [bit for info in fragments for bit in info[1]]
+
+        if minNum:
+            _all = [bit for info in fragments for bit in info[0]]
+#            _uni = set(unique)&set(_all)
+            c = Counter(_all)
+            unique = [x for x in unique if c[x] >= minNum]
+            
+            
         unique = list(set(unique))
-        dic = dict(zip(unique, range(len(unique))))
 
         num = len(unique)
         matrix = np.zeros((len(mols), num), dtype=np.int8)
-
-        for idx, arr in enumerate(matrix):
-            info = fragments[idx]
-            for frag in unique:
-                if frag in info[0]:
-                    arr[dic[frag]] = 1
-
-        self.matrix = pd.DataFrame(matrix, columns=unique)
+    
         fragments = pd.DataFrame(fragments)
-        substructure = {k:v for item in fragments[1].values for k,v in item.items()}
-        idx =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        self.substructure = pd.DataFrame(substructure, index=idx).T
-
-        return self.matrix
+        sub = fragments[0]
+        func = partial(self._getIdx, Array=unique)
+        
+        pool = Pool(self.nJobs)
+        st = pool.map_async(func, sub).get()
+        pool.close()
+        pool.join()
+#        st = st.apply(lambda x: [dic[i] for i in x])
+        for idx,arr in zip(st, matrix):
+            arr[idx]=1
+        matrix = pd.DataFrame(matrix, columns=unique)
+         
+        substructure = {k:v for item in fragments[1].values for k,v in item.items() if k in matrix.columns}
+        idx = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+        substructure = pd.DataFrame(substructure, index=idx).T
+        return matrix, substructure
 
 
 class FunctionGroup:
