@@ -288,9 +288,6 @@ class FunctionGroup:
             The number of CPUs to use to do the computation, by default 1
         """
         self.nJobs = nJobs
-        self.fgs = None
-        self.substructure = pd.DataFrame()
-        self.matrix = pd.DataFrame()
 
     def GetFunctionGroupFragmentLib(self, mols, svg=False):
         """Calculate function-group fragments
@@ -310,12 +307,20 @@ class FunctionGroup:
         mols = mols if isinstance(mols, Iterable) else (mols,)
         func = partial(GetFunctionGroupFragment, svg=svg)
         pool = Pool(self.nJobs)
-        self.fgs = pool.map_async(func, mols).get()
+        fgs = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
-        return self.fgs
-
-    def GetFunctionGroupsMatrix(self, mols, svg=False):
+        return fgs
+     
+    def getIdx(self, subArray, Array):
+        """
+        """
+        uni = set(Array) & set(subArray)
+        idx = [Array.index(x) for x in uni]
+#        print(idx)
+        return idx
+    
+    def GetFunctionGroupsMatrix(self, mols, minNum=None, svg=False):
         """return function-group matrix
 
         Parameters
@@ -330,30 +335,43 @@ class FunctionGroup:
         pandas.core.frame.DataFrame
             the fragment matrix of molecules
         """
-        if not self.fgs:
-            fgs = self.GetFunctionGroupFragmentLib(mols, svg)
-        else:
-            fgs = self.fgs
-
+        
+        fgs = self.GetFunctionGroupFragmentLib(mols, svg)
+#        return fgs
+#        print(fgs)
+    
         unique = [x[0] for fg in fgs for x in fg]
+        if minNum:
+            c = Counter(unique)
+            unique = [x for x in unique if c[x] >= minNum]
         unique = list(set(unique))
-        dic = dict(zip(unique, range(len(unique))))
-
+        
         num = len(unique)
         matrix = np.zeros((len(mols), num), dtype=np.int8)
-
-        for idx, arr in enumerate(matrix):
-            fg = fgs[idx]
-            for item in fg:
-                arr[dic[item[0]]] = 1
-
-        self.matrix = pd.DataFrame(matrix, columns=unique)
+        
+#        cols =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
+#        fgs = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
+        
+#        fgs = pd.DataFrame(fgs)
+        sub = [[x[0] for x in fg] for fg in fgs]
+        func = partial(self.getIdx, Array=unique)
+        
+        pool = Pool(self.nJobs)
+        st = pool.map_async(func, sub).get()
+        pool.close()
+        pool.join()
+#        st = st.apply(lambda x: [dic[i] for i in x])
+        for idx,arr in zip(st, matrix):
+            arr[idx]=1
+#        matrix = pd.DataFrame(matrix, columns=unique)
+        
+        matrix = pd.DataFrame(matrix, columns=unique)
         cols =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        self.substructure = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
-        self.substructure = self.substructure.drop_duplicates(['SMARTS']).set_index('SMARTS', drop=False)
-        self.matrix = self.matrix.reindex(self.substructure.SMARTS.values, axis=1)
-
-        return self.matrix
+        substructure = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
+        substructure = substructure.drop_duplicates(['SMARTS']).set_index('SMARTS', drop=False)
+#        matrix = matrix.reindex(substructure.SMARTS.values, axis=1)
+        substructure = substructure.reindex(matrix.columns)
+        return matrix, substructure
 
 
 if '__main__' == __name__:
