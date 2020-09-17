@@ -316,7 +316,7 @@ class CircularLearner(BaseLearner, Circular):
         return matrix
 
 
-class PathLeanrner(BaseLearner, Path):
+class PathLearner(BaseLearner, Path):
     """Path-Based fragment leanrner
 
     Parameters
@@ -349,8 +349,8 @@ class PathLeanrner(BaseLearner, Path):
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
-        Path.__init__(self, minPath, maxPath,
-                      nBits, folded, nJobs, maxFragment)
+        Path.__init__(self, minPath=minPath, maxPath=maxPath,
+                      nBits=nBits, folded=folded, nJobs=nJobs, maxFragment=maxFragment)
 
     def GetMatrix(self, mols, **kwgrs):
         """Rewrite method
