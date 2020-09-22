@@ -450,6 +450,10 @@ class FunctionGroupLearner(BaseLearner, FunctionGroup):
         matrix = self.GetFunctionGroupsMatrix(mols, **kwgrs)
         return matrix
 
+    def ShowFragment(self, mol, fragment):
+
+        smarts, svg = self.ShowFgFragment(mol, fragment)
+        return smarts, svg
 
 if '__main__' == __name__:
     from rdkit import Chem
@@ -477,14 +481,23 @@ if '__main__' == __name__:
     # end = time.clock()
     # print(end-start)
 
-    start = time.clock()
-    pa = PathLearner(
-        minPath=1, maxPath=7,
-        maxFragment=True, nJobs=20
-    )
+    # start = time.clock()
+    # pa = PathLearner(
+    #     minPath=1, maxPath=7,
+    #     maxFragment=True, nJobs=20
+    # )
 
-    sigPvalue, sigMatrix = pa.fit(mols, y_true)
+    # sigPvalue, sigMatrix = pa.fit(mols, y_true)
+    # print(type(sigPvalue))
+    # pa.savePvalue(sigPvalue, './092220.html')
+    # end = time.clock()
+    # print(end-start)
+
+    start = time.clock()
+    fg = FunctionGroupLearner(4)
+
+    sigPvalue, sigMatrix = fg.fit(mols, y_true)
     print(type(sigPvalue))
-    pa.savePvalue(sigPvalue, './092220.html')
+    fg.savePvalue(sigPvalue, './092220.html')
     end = time.clock()
     print(end-start)

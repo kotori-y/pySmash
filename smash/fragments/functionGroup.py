@@ -31,16 +31,30 @@ from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem import rdDepictor
 
-__all__ = ['GetFunctionGroupFragment']
+__all__ = [
+        'GetFunctionGroupFragment',
+        'DrawFgEnv'
+    ]
 
 
 subMolDic = {}
 
 
-def _DisposedFgFragment(mol, subMol, molSize=(150, 150)):
-    """Dispose the bitinfo retrived from GetFunctionGroupFragment
-    *internal only*
-    """
+def DrawFgEnv(mol, subMol, molSize=(150, 150)):
+    """Get the SVG image of funtion group fragment
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        The molecule which contain the aim fragment
+    subMol : str
+        Fragment in fragment format
+
+    Returns
+    -------
+    svg : str
+        The svg string of fragment
+    """ 
     if not mol.GetNumConformers():
         rdDepictor.Compute2DCoords(mol)
 
@@ -65,7 +79,8 @@ def _DisposedFgFragment(mol, subMol, molSize=(150, 150)):
     drawer.DrawMolecule(submol)
     drawer.FinishDrawing()
 
-    return drawer.GetDrawingText().replace('\n', '')
+    svg = drawer.GetDrawingText().replace('\n', '')
+    return svg
 
 
 def merge(mol, marked, aset):
@@ -99,21 +114,18 @@ PATT_TUPLE = (PATT_DOUBLE_TRIPLE, PATT_CC_DOUBLE_TRIPLE,
               PATT_ACETAL, PATT_OXIRANE_ETC)
 
 
-def GetFunctionGroupFragment(mol, svg=False):
+def GetFunctionGroupFragment(mol):
     """Calculate function group fragment.
 
     Parameters
     ----------
     mol : dkit.Chem.rdchem.Mol object
         Compound to be Calculated
-    svg : bool, optional
-        Whether output with a svg image, by default False
 
     Returns
     -------
-    ifgs : tuple of list
-        In each tuple element, the first element is the SMARTS of fragment
-        and the second one svg string (is svg set as True)
+    ifgs : list
+        Each element is the SMARTS of a fragment
     """    
     marked = set()
 # mark all heteroatoms in a molecule, including halogens
@@ -146,10 +158,7 @@ def GetFunctionGroupFragment(mol, svg=False):
         fg = Chem.MolFragmentToSmiles(mol, g.union(uca), canonical=True)
         
         if fg not in st:
-            if svg:
-                ifgs.append((fg, _DisposedFgFragment(mol, fg)))
-            else:
-                ifgs.append((fg, ))
+            ifgs.append(fg)
             st.append(fg)
     
     return ifgs
@@ -159,5 +168,5 @@ if __name__ == "__main__":
     from rdkit import Chem
     
     mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
-    fragments = GetFunctionGroupFragment(mol, svg=True)
+    fragments = GetFunctionGroupFragment(mol)
     print(fragments)

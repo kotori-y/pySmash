@@ -318,15 +318,13 @@ class FunctionGroup:
         """
         self.nJobs = nJobs
 
-    def GetFunctionGroupFragmentLib(self, mols, svg=False):
+    def GetFunctionGroupFragmentLib(self, mols):
         """Calculate function-group fragments
 
         Parameters
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
             The compounds used to obtain function-group fragment
-        svg : bool, optional
-            Whether output with a svg image, by default False
 
         Returns
         -------
@@ -334,14 +332,14 @@ class FunctionGroup:
             Fragments calculated, each element is rerurned from GetFunctionGroupFragment() function
         """
         mols = mols if isinstance(mols, Iterable) else (mols,)
-        func = partial(GetFunctionGroupFragment, svg=svg)
+        func = partial(GetFunctionGroupFragment)
         pool = Pool(self.nJobs)
         fgs = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
         return fgs
      
-    def getIdx(self, subArray, Array):
+    def _getIdx(self, subArray, Array):
         """
         """
         uni = set(Array) & set(subArray)
@@ -349,15 +347,13 @@ class FunctionGroup:
 #        print(idx)
         return idx
     
-    def GetFunctionGroupsMatrix(self, mols, minNum=None, svg=False):
+    def GetFunctionGroupsMatrix(self, mols, minNum=None):
         """return function-group matrix
 
         Parameters
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
             The compounds used to obtain function-group matrix
-        svg : bool, optional
-            Whether output with a svg image, by default False
 
         Returns
         -------
@@ -365,11 +361,11 @@ class FunctionGroup:
             the fragment matrix of molecules
         """
         
-        fgs = self.GetFunctionGroupFragmentLib(mols, svg)
+        fgs = self.GetFunctionGroupFragmentLib(mols)
 #        return fgs
 #        print(fgs)
     
-        unique = [x[0] for fg in fgs for x in fg]
+        unique = [x for fg in fgs for x in fg]
         if minNum:
             c = Counter(unique)
             unique = [x for x in unique if c[x] >= minNum]
@@ -382,26 +378,40 @@ class FunctionGroup:
 #        fgs = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
         
 #        fgs = pd.DataFrame(fgs)
-        sub = [[x[0] for x in fg] for fg in fgs]
-        func = partial(self.getIdx, Array=unique)
+        # sub = [[x[0] for x in fg] for fg in fgs]
+        func = partial(self._getIdx, Array=unique)
         
         pool = Pool(self.nJobs)
-        st = pool.map_async(func, sub).get()
+        st = pool.map_async(func, fgs).get()
         pool.close()
         pool.join()
 #        st = st.apply(lambda x: [dic[i] for i in x])
         for idx,arr in zip(st, matrix):
             arr[idx]=1
-#        matrix = pd.DataFrame(matrix, columns=unique)
-        
         matrix = pd.DataFrame(matrix, columns=unique)
-        cols =  ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        substructure = pd.DataFrame([fg for fg in sum(fgs,[])], columns=cols)
-        substructure = substructure.drop_duplicates(['SMARTS']).set_index('SMARTS', drop=False)
-#        matrix = matrix.reindex(substructure.SMARTS.values, axis=1)
-        substructure = substructure.reindex(matrix.columns)
-        return matrix, substructure
 
+        return matrix
+
+    def ShowFgFragment(self, mol, fragment):
+        """Get the SMARTS and SVG image of functional group fragment
+
+        Parameters
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            The molecule which contain the aim fragment
+        fragment : int
+            The fragment in SMARTS format
+
+        Returns
+        -------
+        smarts : str
+            The SMARTS of fragment, which could be used for screening molecules
+        svg : str
+            The svg string of fragment
+        """ 
+        svg = DrawFgEnv(mol, fragment)
+        smarts = fragment
+        return smarts, svg
 
 if '__main__' == __name__:
     freeze_support()
@@ -424,16 +434,15 @@ if '__main__' == __name__:
     # print(end - start)
     # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
 
-    path = Path(minPath=1, maxPath=4)
-    # pathMatrix = path.GetPathMatrix(mols)
-    # print(pathMatrix)
-    svg = path.ShowPathFragment(mols[29], 1003675631)
-    print(svg)
+    # path = Path(minPath=1, maxPath=4)
+    # # pathMatrix = path.GetPathMatrix(mols)
+    # # print(pathMatrix)
+    # svg = path.ShowPathFragment(mols[29], 1003675631)
+    # print(svg)
     # print(path.substructure)
     # path_matrix = path.GetPathMatrix()
     # print(pathMatrix.shape)
 
-    # funcgroup = FunctionGroup()
-    # print(funcgroup.GetFunctionGroupsMatrix(mols, svg=False))
-    # print(funcgroup.substructure)
+    funcgroup = FunctionGroup()
+    print(funcgroup.GetFunctionGroupsMatrix(mols, minNum=5))
     print('Done!!')
