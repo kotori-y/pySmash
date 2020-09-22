@@ -28,21 +28,28 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True):
     """Dispose the bitinfo retrived from GetFoldedPathFragment() or GetUnfoldedPathFragment()
     *internal only*
     """
-    allFragments = list(bitInfo.keys())
-    st = []
+    def func(frags):
+        sets = [set(e) for e in frags]
+        us = []
+        for e in sets:
+            if any(e < s for s in sets):
+                continue
+            else:
+                us.append(str(e))
+        return us
+
     maxFragments = []
-    
-    for idx in sorted(bitInfo, key=lambda idx: len(bitInfo[idx][0]), reverse=True):
-        smi, _ = DrawRDKitEnv(mol, bitInfo[idx][0])
-        newPatt = Chem.MolFromSmarts(smi)
-        newPatt.UpdatePropertyCache(strict=False)
-                
-        for patt in st:
-            if not maxFragment or patt.HasSubstructMatch(newPatt):
-                break
-        else:     
-            st.append(newPatt)
-            maxFragments.append(idx)
+    allFragments = list(bitInfo.keys())
+    if maxFragment:
+        dic = {str(set(x)): k for k, v in bitInfo.items() for x in v}
+        bitInfo = [i for j in bitInfo.values() for i in j]
+        bitInfo = func(bitInfo)
+        for k in bitInfo:
+            idx = dic[k]
+            if idx not in maxFragments:
+                maxFragments.append(idx)
+    else:
+        pass
 
     return (allFragments, maxFragments)
 
