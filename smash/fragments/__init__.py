@@ -161,8 +161,6 @@ class Circular:
         return (smarts, svg)
         
         
-
-
 class Path:
     """Calculte path-based fragments and obtain matrix  
     """    
@@ -197,7 +195,7 @@ class Path:
         self.maxFragment = maxFragment
 
 
-    def GetPathFragmentLib(self, mols, svg=False):
+    def GetPathFragmentLib(self, mols):
         """Calculate path-based fragments
 
         Parameters
@@ -219,7 +217,7 @@ class Path:
                        nBits=self.nBits,
                        folded=self.folded,
                        maxFragment=self.maxFragment,
-                       svg=svg)
+                       disposed=True)
 
         pool = Pool(self.nJobs)
         bitInfo = pool.map_async(func, mols).get()
@@ -229,21 +227,21 @@ class Path:
         return bitInfo
     
     def _getIdx(self, subArray, Array):
-        """
+        """Get index of a list to another list
+        *internal only*
         """
         uni = set(Array) & set(subArray)
         idx = [Array.index(x) for x in uni]
-#        print(idx)
         return idx
     
-    def GetPathMatrix(self, mols, minNum=None, svg=False):
+    def GetPathMatrix(self, mols, minNum=None):
         """return path-based matrix
 
         Parameters
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
             The compounds used to obtain path-based matrix
-        svg : bool, optional
+        minNum : bool, optional
             Whether output with a svg image, by default False
 
         Returns
@@ -251,13 +249,12 @@ class Path:
         pandas.core.frame.DataFrame
             the fragment matrix of molecules
         """
-        fragments = self.GetPathFragmentLib(mols, svg=svg)
+        fragments = self.GetPathFragmentLib(mols)
         
         unique = [bit for info in fragments for bit in info[1]]
 
         if minNum:
             _all = [bit for info in fragments for bit in info[0]]
-#            _uni = set(unique)&set(_all)
             c = Counter(_all)
             unique = [x for x in unique if c[x] >= minNum]
             
@@ -275,16 +272,38 @@ class Path:
         st = pool.map_async(func, sub).get()
         pool.close()
         pool.join()
-#        st = st.apply(lambda x: [dic[i] for i in x])
         for idx,arr in zip(st, matrix):
             arr[idx]=1
         matrix = pd.DataFrame(matrix, columns=unique)
          
-        substructure = {k:v for item in fragments[1].values for k,v in item.items() if k in matrix.columns}
-        idx = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        substructure = pd.DataFrame(substructure, index=idx).T
-        return matrix, substructure
+        return matrix
 
+    def ShowPathFragment(self, mol, fragmentIndex):
+        """Get the SMARTS and SVG image of Path fragment
+
+        Parameters
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            The molecule which contain the aim fragment
+        fragmentIndex : int
+            The index of aim fragment
+
+        Returns
+        -------
+        smarts : str
+            The SMARTS of fragment, which could be used for screening molecules
+        svg : str
+            The svg string of fragment
+        """        
+        fragments = GetPathFragment(
+                mol, minPath=self.minPath, maxPath=self.maxPath,
+                nBits=self.nBits, folded=self.folded, maxFragment=self.maxFragment,
+                disposed=False
+            )
+        bondPath = fragments[fragmentIndex][0]
+        smarts, svg = DrawRDKitEnv(mol, bondPath)
+        return smarts, svg
+    
 
 class FunctionGroup:
     """Calculte function-group fragments and obtain matrix  
@@ -394,22 +413,25 @@ if '__main__' == __name__:
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     # mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
-    start = time.clock()
-    circular = Circular(folded=False, maxRadius=7,
-                        minRadius=1, maxFragment=True,
-                        nJobs=20)
-    # cirMatrix = circular.GetCircularMatrix(mols, minNum=5)
-    svg = circular.ShowCircularFragment(mols[1115], 2380084179)
-    print(svg)
-    end = time.clock()
-    print(end - start)
+    # start = time.clock()
+    # circular = Circular(folded=False, maxRadius=7,
+    #                     minRadius=1, maxFragment=True,
+    #                     nJobs=20)
+    # # cirMatrix = circular.GetCircularMatrix(mols, minNum=5)
+    # svg = circular.ShowCircularFragment(mols[1115], 2380084179)
+    # print(svg)
+    # end = time.clock()
+    # print(end - start)
     # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
 
-    # path = Path(minPath=1, maxPath=3)
-    # path_frag = path.GetPathMatrix(mols, svg=True)
+    path = Path(minPath=1, maxPath=4)
+    # pathMatrix = path.GetPathMatrix(mols)
+    # print(pathMatrix)
+    svg = path.ShowPathFragment(mols[29], 1003675631)
+    print(svg)
     # print(path.substructure)
     # path_matrix = path.GetPathMatrix()
-    # print(path_matrix.shape)
+    # print(pathMatrix.shape)
 
     # funcgroup = FunctionGroup()
     # print(funcgroup.GetFunctionGroupsMatrix(mols, svg=False))

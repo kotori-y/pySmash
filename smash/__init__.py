@@ -97,6 +97,13 @@ class BaseLearner:
         """
     
     def ShowFragment(self, mol, **kwgrs):
+        """Visulaizing fragments.
+
+        Parameters
+        ----------
+        mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
+            compounds, which have aspecific endpoint label, used to obtain significant fragments.
+        """
         pass
 
     def fit(self, mols,
@@ -385,6 +392,26 @@ class PathLearner(BaseLearner, Path):
         matrix = self.GetPathMatrix(mols, **kwgrs)
         return matrix
 
+    def ShowFragment(self, mol, fragmentIndex):
+        """Get the SMARTS and SVG image of Path fragment
+
+        Parameters
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            The molecule which contain the aim fragment
+        fragmentIndex : int
+            The index of aim fragment
+
+        Returns
+        -------
+        smarts : str
+            The SMARTS of fragment, which could be used for screening molecules
+        svg : str
+            The svg string of fragment
+        """     
+        smarts, svg = self.ShowPathFragment(mol, fragmentIndex)
+        return smarts, svg
+
 
 class FunctionGroupLearner(BaseLearner, FunctionGroup):
     """Function-Group fragment leanrner
@@ -439,13 +466,25 @@ if '__main__' == __name__:
     mols = list(compress(mols, bo))
     y_true = data.Label.values[bo]
 
-    start = time.clock()
-    circular = CircularLearner(minRadius=1, maxRadius=6,
-                               maxFragment=True, nJobs=20)
+    # start = time.clock()
+    # circular = CircularLearner(minRadius=1, maxRadius=6,
+    #                            maxFragment=True, nJobs=20)
 
-    sigPvalue, sigMatrix = circular.fit(mols, y_true)
-    sigPvalue.to_html('././092220_1.html', escape=False)
+    # sigPvalue, sigMatrix = circular.fit(mols, y_true)
+    # sigPvalue.to_html('././092220_1.html', escape=False)
+    # print(type(sigPvalue))
+    # circular.savePvalue(sigPvalue, './092220.html')
+    # end = time.clock()
+    # print(end-start)
+
+    start = time.clock()
+    pa = PathLearner(
+        minPath=1, maxPath=7,
+        maxFragment=True, nJobs=20
+    )
+
+    sigPvalue, sigMatrix = pa.fit(mols, y_true)
     print(type(sigPvalue))
-    circular.savePvalue(sigPvalue, './092220.html')
+    pa.savePvalue(sigPvalue, './092220.html')
     end = time.clock()
     print(end-start)

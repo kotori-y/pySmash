@@ -20,19 +20,20 @@ from rdkit.Chem.Draw import _getRDKitEnv
 
 __all__ = ['GetFoldedPathFragment',
            'GetUnfoldedPathFragment',
-           'GetPathFragment']
+           'GetPathFragment',
+           'DrawRDKitEnv']
 
 
-def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
+def _DisposePathFragments(mol, bitInfo, maxFragment=True):
     """Dispose the bitinfo retrived from GetFoldedPathFragment() or GetUnfoldedPathFragment()
     *internal only*
     """
-    keys = list(bitInfo.keys())
+    allFragments = list(bitInfo.keys())
     st = []
-    fragments = {}
+    maxFragments = []
     
     for idx in sorted(bitInfo, key=lambda idx: len(bitInfo[idx][0]), reverse=True):
-        smi, svgImg = DrawRDKitEnv(mol, bitInfo[idx][0])
+        smi, _ = DrawRDKitEnv(mol, bitInfo[idx][0])
         newPatt = Chem.MolFromSmarts(smi)
         newPatt.UpdatePropertyCache(strict=False)
                 
@@ -41,9 +42,9 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True, svg=False):
                 break
         else:     
             st.append(newPatt)
-            fragments[idx] = (smi, svgImg.replace('\n','')) if svg else (smi, )
+            maxFragments.append(idx)
 
-    return (keys, fragments)
+    return (allFragments, maxFragments)
 
 
 def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
@@ -75,13 +76,13 @@ def DrawRDKitEnv(mol, bondPath, molSize=(150, 150), baseRad=0.3, useSVG=True,
                         highlightBondColors=menv.bondColors, highlightAtomRadii=menv.highlightRadii,
                         **kwargs)
     drawer.FinishDrawing()
-    return subMol, drawer.GetDrawingText()
+    return subMol, drawer.GetDrawingText().replace('\n','')
 
 
 def GetFoldedPathFragment(mol,
                           minPath=1, maxPath=7,
                           nBits=1024, maxFragment=True,
-                          svg=False):
+                          disposed=True):
     """Calculate folded path fragment.
 
     Parameters
@@ -96,8 +97,8 @@ def GetFoldedPathFragment(mol,
         the number of bit of morgan, by default 1014
     maxFragment : bool, optional
         Whether only return the maximum fragment of a given start atom, by default True
-    svg : bool, optional
-        Whether output with a svg image, by default False
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
@@ -114,12 +115,13 @@ def GetFoldedPathFragment(mol,
                         bitInfo=bitInfo)
 
     fragments = _DisposePathFragments(
-        mol, bitInfo, maxFragment=maxFragment, svg=svg)
+            mol, bitInfo, maxFragment=maxFragment
+        ) if disposed else bitInfo
     return fragments
 
 
 def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
-                            maxFragment=True, svg=False):
+                            maxFragment=True, disposed=True):
     """Calculate unfolded path fragment.
 
     Parameters
@@ -132,8 +134,8 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
         The probable maximum length of path-based fragment, by default 7
     maxFragment : bool, optional
         Whether only return the maximum fragment of a given start atom, by default True
-    svg : bool, optional
-        Whether output with a svg image, by default False
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
@@ -148,14 +150,16 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
                                           maxPath=maxPath,
                                           bitInfo=bitInfo)
 
-    fragments = _DisposePathFragments(mol, bitInfo, maxFragment=maxFragment, svg=svg)
+    fragments = _DisposePathFragments(
+            mol, bitInfo, maxFragment=maxFragment
+        ) if disposed else bitInfo
     return fragments
 
 
 def GetPathFragment(mol,
                     minPath=1, maxPath=7,
                     nBits=1024, folded=False,
-                    maxFragment=True, svg=False):
+                    maxFragment=True, disposed=True):
     """Calculate path fragment.
 
     Parameters
@@ -173,8 +177,8 @@ def GetPathFragment(mol,
         which generate fragment based on unfolded fingerprint, by default True.
     maxFragment : bool, optional
         Whether only return the maximum fragment at a center atom, by default True
-    svg : bool, optional
-        Whether output with a svg image, by default False
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
@@ -184,31 +188,22 @@ def GetPathFragment(mol,
         value is corresponding SMARTS and svg string (is svg set as True)
     """
     if folded:
-        fragments = GetFoldedPathFragment(mol,
-                                        minPath=minPath, maxPath=maxPath,
-                                        nBits=nBits, maxFragment=maxFragment,
-                                        svg=svg)
+        fragments = GetFoldedPathFragment(
+            mol, minPath=minPath, maxPath=maxPath,
+            nBits=nBits, maxFragment=maxFragment,
+            disposed=disposed
+        )
     else:
-        fragments = GetUnfoldedPathFragment(mol,
-                                          minPath=minPath, maxPath=maxPath,
-                                          maxFragment=maxFragment, svg=svg)
+        fragments = GetUnfoldedPathFragment(
+            mol, minPath=minPath, maxPath=maxPath,
+            maxFragment=maxFragment, disposed=disposed
+        )
 
-    # substrcutures = []
-    # head = getBeginEndAtom(mol)
-
-    # for info in bitInfo.values():
-    #     atomsToUse = [head[bond] for bond in info[0]]
-    #     atomsToUse = set(sum(atomsToUse, []))
-    #     smi = Chem.MolFragmentToSmiles(mol, atomsToUse, bondsToUse=info[0])
-    #     substrcutures.append(smi)
-
-    # substrcutures = list(set(substrcutures))
-    # return substrcutures
     return fragments
 
 
 if '__main__' == __name__:
 
     mol = Chem.MolFromSmiles('CN(C1=CC=C(C=C1)N=N/C2=CC=CC=C2)C')
-    fragments = GetPathFragment(mol, maxFragment=True, svg=True)
+    fragments = GetPathFragment(mol, maxFragment=True, disposed=True)
     print(fragments)
