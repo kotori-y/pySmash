@@ -185,10 +185,11 @@ class BaseLearner:
         
 
         sigPvalue = sigPvalue.sort_values('Pvalue')
-        print(type(sigPvalue))
+        # print(type(sigPvalue))
         sigMatrix = sigMatrix.reindex(sigPvalue.index, axis=1)
 
-        
+        self.sigFragments = sigPvalue.SMARTS.to_dict()
+
         return sigPvalue, sigMatrix
 
     def predict(self, mols):
@@ -215,7 +216,7 @@ class BaseLearner:
             raise NotFittedError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method.")
 
-        predMatrix, _ = self.GetMatrix(mols, svg=True)
+        predMatrix = self.GetMatrix(mols)
         # cols = set(predMatrix.columns) & set(self.sigPvalue.index)
         predMatrix = predMatrix.reindex(
             self.sigFragments.keys(), axis=1).reset_index(drop=True).fillna(0)
@@ -315,6 +316,7 @@ class CircularLearner(BaseLearner, Circular):
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
+        BaseLearner.__init__(self)
         Circular.__init__(self, minRadius=minRadius, maxRadius=maxRadius,
                           nBits=nBits, folded=folded,
                           maxFragment=maxFragment, nJobs=nJobs)
@@ -373,6 +375,7 @@ class PathLearner(BaseLearner, Path):
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
+        BaseLearner.__init__(self)
         Path.__init__(self, minPath=minPath, maxPath=maxPath,
                       nBits=nBits, folded=folded, nJobs=nJobs, maxFragment=maxFragment)
 
@@ -432,6 +435,7 @@ class FunctionGroupLearner(BaseLearner, FunctionGroup):
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
+        BaseLearner.__init__(self)
         FunctionGroup.__init__(self, nJobs)
 
     def GetMatrix(self, mols, **kwgrs):
@@ -497,7 +501,8 @@ if '__main__' == __name__:
     fg = FunctionGroupLearner(4)
 
     sigPvalue, sigMatrix = fg.fit(mols, y_true)
-    print(type(sigPvalue))
+    # print(type(sigPvalue))
     fg.savePvalue(sigPvalue, './092220.html')
+    print(fg.predict(mols))
     end = time.clock()
     print(end-start)
