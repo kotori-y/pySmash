@@ -22,17 +22,18 @@ from rdkit.Chem.Draw import _getMorganEnv
 
 __all__ = ['GetFoldedCircularFragment',
            'GetUnfoldedCircularFragment',
-           'GetCircularFragment']
+           'GetCircularFragment',
+           'DrawMorganEnv']
 
 
-def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True, svg=False):
+def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True):
     """Dispose the bitinfo retrived from GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
     *internal only*
     """
-    idxAll = list(bitInfo.keys())
+    allFragments = list(bitInfo.keys())
 
     station = {}
-    fragments = {}
+    # maxFragments = []
     for idx, pairs in bitInfo.items():
         for (atom, radius) in pairs:
             if radius >= minRadius and (not maxFragment or \
@@ -40,12 +41,8 @@ def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True, svg=Fal
                     station[atom]['radius'] < radius):
                 station[atom] = {'idx':idx, 'radius':radius}
 
-    for atom, vals in station.items():
-        idx, rad = vals.values()
-        sma, svgImg = DrawMorganEnv(mol, atom, rad)
-        fragments[vals['idx']] = (sma, svgImg) if svg else (sma, )
-
-    return (idxAll, fragments)
+    maxFragments = [vals['idx'] for vals in station.values()]
+    return (allFragments, maxFragments)
 
 
 def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=True,
@@ -83,7 +80,7 @@ def DrawMorganEnv(mol, atomId, radius, molSize=(150, 150), baseRad=0.3, useSVG=T
 
 def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
                               nBits=1024, maxFragment=True,
-                              svg=False):
+                              disposed=True):
     """Get folded circular fragment
 
     Parameters
@@ -115,12 +112,13 @@ def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
                                        bitInfo=bitInfo)
 
     fragments = _DisposeCircularBitInfo(
-        mol, bitInfo, minRadius, maxFragment, svg)
+            mol, bitInfo, minRadius, maxFragment
+        ) if disposed else bitInfo
     return fragments
 
 
 def GetUnfoldedCircularFragment(mol, minRadius=1, maxRadius=2,
-                                maxFragment=True, svg=False):
+                                maxFragment=True, disposed=True):
     """Get unfolded circular fragment
 
     Parameters
@@ -149,13 +147,14 @@ def GetUnfoldedCircularFragment(mol, minRadius=1, maxRadius=2,
                               bitInfo=bitInfo)
 
     fragments = _DisposeCircularBitInfo(
-        mol, bitInfo, minRadius, maxFragment, svg)
+            mol, bitInfo, minRadius, maxFragment
+        ) if disposed else bitInfo
     return fragments
 
 
 def GetCircularFragment(mol, minRadius=1, maxRadius=2,
                         nBits=1024, folded=False,
-                        maxFragment=True, svg=False):
+                        maxFragment=True, disposed=True):
     """Get circular fragment
 
     Parameters
@@ -187,13 +186,16 @@ def GetCircularFragment(mol, minRadius=1, maxRadius=2,
         fragments = GetFoldedCircularFragment(mol,
                                               minRadius=minRadius, maxRadius=maxRadius,
                                               nBits=nBits, maxFragment=maxFragment,
-                                              svg=svg)
+                                              disposed=disposed)
     else:
         fragments = GetUnfoldedCircularFragment(mol,
                                                 minRadius=minRadius, maxRadius=maxRadius,
-                                                maxFragment=maxFragment, svg=svg)
+                                                maxFragment=maxFragment, disposed=disposed)
 
     return fragments
+
+
+# def ShowCircularFragment(mol, )
 
 
 if '__main__' == __name__:
@@ -201,5 +203,5 @@ if '__main__' == __name__:
     mol = Chem.MolFromSmiles('C1=CC2NC(=O)CC3C=2C(C(=O)C2C=CC=CC=23)=C1')
 
     fragments = GetCircularFragment(
-        mol, maxRadius=4, minRadius=1, maxFragment=True, svg=False)
-    # print(fragments)
+        mol, maxRadius=4, minRadius=1, maxFragment=True)
+    print(fragments)

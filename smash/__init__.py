@@ -14,6 +14,7 @@ Created on Sun Jun 14 17:03:20 2020
 
 from decimal import Decimal
 import multiprocessing as mp
+from collections.abc import Iterable
 
 import os
 import pandas as pd
@@ -94,11 +95,14 @@ class BaseLearner:
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object.
             compounds, which have aspecific endpoint label, used to obtain significant fragments.
         """
+    
+    def ShowFragment(self, mol, **kwgrs):
+        pass
 
     def fit(self, mols,
             labels, aimLabel=1,
             minNum=5, pCutoff=0.05,
-            accCutoff=None, Bonferroni=False, svg=True):
+            accCutoff=None, Bonferroni=False):
         """Learning from given database which have aspecific endpoint label.
 
         Parameters
@@ -125,7 +129,9 @@ class BaseLearner:
         smash.BaseLearner
             A fitted learner, used predict() method can predict molecules without known label 
         """
-        matrix, substructure = self.GetMatrix(mols, svg=svg, minNum=minNum)
+        mols = tuple(mols) if isinstance(mols, Iterable) else (mols, )
+
+        matrix = self.GetMatrix(mols, minNum=minNum)
 
         n = len(labels)
         m = (labels == aimLabel).sum()
@@ -140,7 +146,7 @@ class BaseLearner:
                 binom.pmf(range(x['ms'], x['ns']+1), x['ns'], p)
             ), axis=1
         )
-    # print(sigPvalue)
+
         sigPvalue = sigPvalue[sigPvalue <= pCutoff]
 
         sigPvalue = pd.DataFrame(sigPvalue, columns=['Pvalue'])
@@ -161,14 +167,20 @@ class BaseLearner:
         else:
             pass
 
-        substructure = substructure.reindex(sigPvalue.index)
-        sigPvalue = pd.concat(
-            (sigPvalue, substructure), axis=1, sort=False)
+        substructure = {}
+        for idx,vals in sigMatrix.iteritems():
+            mol = mols[vals[vals==1].index[0]]
+            smarts, svg = self.ShowFragment(mol, idx)
+            substructure[idx] = {"SMARTS":smarts, "Substructure":svg}
+        substructure = pd.DataFrame(substructure).T
+        
+        sigPvalue = sigPvalue.merge(substructure, left_index=True, right_index=True)
+        
 
         sigPvalue = sigPvalue.sort_values('Pvalue')
-        sigMatrix = matrix.reindex(sigPvalue.index, axis=1)
+        print(type(sigPvalue))
+        sigMatrix = sigMatrix.reindex(sigPvalue.index, axis=1)
 
-        self.sigFragments = sigPvalue.SMARTS.to_dict()
         
         return sigPvalue, sigMatrix
 
@@ -316,6 +328,10 @@ class CircularLearner(BaseLearner, Circular):
         matrix = self.GetCircularMatrix(mols, **kwgrs)
         return matrix
 
+    def ShowFragment(self, mol, fragmentIndex):
+
+        smarts, svg = self.ShowCircularFragment(mol, fragmentIndex)
+        return (smarts, svg)
 
 class PathLearner(BaseLearner, Path):
     """Path-Based fragment leanrner
@@ -428,6 +444,8 @@ if '__main__' == __name__:
                                maxFragment=True, nJobs=20)
 
     sigPvalue, sigMatrix = circular.fit(mols, y_true)
-    print(sigMatrix)
+    sigPvalue.to_html('././092220_1.html', escape=False)
+    print(type(sigPvalue))
+    circular.savePvalue(sigPvalue, './092220.html')
     end = time.clock()
     print(end-start)

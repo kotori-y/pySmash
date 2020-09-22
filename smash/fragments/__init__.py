@@ -65,7 +65,7 @@ class Circular:
 #        self.matrix = pd.DataFrame()
 #        self.fragments = None
     
-    def GetCircularFragmentLib(self, mols, svg=False):
+    def GetCircularFragmentLib(self, mols, disposed=True):
         """Calculate circular fragments
 
         Parameters
@@ -87,7 +87,7 @@ class Circular:
                        nBits=self.nBits,
                        folded=self.folded,
                        maxFragment=self.maxFragment,
-                       svg=svg)
+                       disposed=disposed)
 
         mols = mols if isinstance(mols, Iterable) else (mols, )
 
@@ -105,7 +105,7 @@ class Circular:
         idx = [Array.index(x) for x in uni]
         return idx
     
-    def GetCircularMatrix(self, mols, minNum=None, svg=False):
+    def GetCircularMatrix(self, mols, minNum=None):
         """return circular matrix
     
         Parameters
@@ -121,8 +121,8 @@ class Circular:
             The fragment matrix of molecules
         """
 
-        fragments = self.GetCircularFragmentLib(mols, svg=svg)
-        unique = [bit for info in fragments for bit in info[1]]
+        fragments = self.GetCircularFragmentLib(mols)
+        unique = [frag for allFragments in fragments for frag in allFragments[1]]
         
         if minNum:
             _all = [bit for info in fragments for bit in info[0]]
@@ -147,10 +147,20 @@ class Circular:
             arr[idx]=1
         matrix = pd.DataFrame(matrix, columns=unique)
          
-        substructure = {k:v for item in fragments[1].values for k,v in item.items()}
-        idx = ['SMARTS'] if not svg else ['SMARTS', 'Substructure']
-        substructure = pd.DataFrame(substructure, index=idx).T
-        return matrix, substructure
+        return matrix
+
+    def ShowCircularFragment(self, mol, fragmentIndex):
+
+        fragments = GetCircularFragment(
+                mol, minRadius=self.minRadius, maxRadius=self.maxRadius,
+                nBits=self.nBits, folded=self.folded, maxFragment=self.maxFragment,
+                disposed=False
+            )
+        center, radius = fragments[fragmentIndex][0]
+        smarts, svg = DrawMorganEnv(mol, center, radius)
+        return (smarts, svg)
+        
+        
 
 
 class Path:
@@ -380,6 +390,7 @@ if '__main__' == __name__:
     import time
     
     data = pd.read_csv(r'..\..\tests\Carc\Carc.txt', sep='\t')
+    # data = data.sample(frac=0.2)
     mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
     # mols = [Chem.MolFromSmiles(smi) for smi in smis]
 
@@ -387,7 +398,9 @@ if '__main__' == __name__:
     circular = Circular(folded=False, maxRadius=7,
                         minRadius=1, maxFragment=True,
                         nJobs=20)
-    fragments = circular.GetCircularMatrix(mols, svg=True)
+    # cirMatrix = circular.GetCircularMatrix(mols, minNum=5)
+    svg = circular.ShowCircularFragment(mols[1115], 2380084179)
+    print(svg)
     end = time.clock()
     print(end - start)
     # circular_matrix = circular.GetCircularMatrix(mols, svg=True)
