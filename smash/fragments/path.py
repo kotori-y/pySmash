@@ -145,10 +145,9 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
 
     Returns
     -------
-    fragments : tuple
-        The first element is the ID of all fragments generated,
-        and the second one is a dict whose key is the ID of output fragments,
-        value is corresponding SMARTS and svg string (is svg set as True)
+    fragments : list of list
+        The first element is the ID of all fragments generated
+        the second one is the ID of output fragments
     """
     bitInfo = {}
     fp = UnfoldedRDKFingerprintCountBased(mol,
@@ -188,10 +187,9 @@ def GetPathFragment(mol,
 
     Returns
     -------
-    fragments : tuple
-        The first element is the ID of all fragments generated,
-        and the second one is a dict whose key is the ID of output fragments,
-        value is corresponding SMARTS and svg string (is svg set as True)
+    fragments : list of list
+        The first element is the ID of all fragments generated
+        the second one is the ID of output fragments
     """
     if folded:
         fragments = GetFoldedPathFragment(
