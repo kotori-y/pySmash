@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar 15 13:21:07 2019
+Created on Fri Mar 15 13:21:07 2020
 
 @Author: Zhi-Jiang Yang, Dong-Sheng Cao
 @Institution: CBDD Group, Xiangya School of Pharmaceutical Science, CSU, China
@@ -16,7 +16,7 @@ from distutils.core import setup
 
 # print（__doc__）
 
-package_data= {'smash':['fragments/*', 'css/*']}
+package_data= {'smash':['fragments/*']}
 
 
 setup(name="smash",  
