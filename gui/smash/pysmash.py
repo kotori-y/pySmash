@@ -84,17 +84,19 @@ class SmashGui(Tk):
         self.thread_run.join()
         self.thread_run = None
 
-    def downloadRes(self, data, datype, preview=True, **kwgrs):
+    def downloadRes(self, data, datype, preview=True, index=False, **kwgrs):
         if preview:
             self.previewRes(data, datype)
         if datype == 'df':
             savefile = asksaveasfilename(filetypes=(("CSV file", "*.csv*"), ))
             if savefile:
                 try:
-                    data.to_csv(savefile, **kwgrs)
+                    data.to_csv(savefile, index=index, **kwgrs)
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
+                else:
+                    showinfo('Succesed','file saved')
             else:
                 pass
         elif datype == 'HTML':
@@ -102,10 +104,12 @@ class SmashGui(Tk):
                 filetypes=(("Html file", "*.html*"), ))
             if savefile:
                 try:
-                    self.model.savePvalue(savefile)
+                    self.model.savePvalue(data, savefile)
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
+                else:
+                    showinfo('Succesed','file saved')
             else:
                 pass
         else:
@@ -117,13 +121,16 @@ class SmashGui(Tk):
                 except PermissionError:
                     messagebox.showerror(
                         title='Error!', message="Permission Denied!!!")
+                else:
+                    showinfo('Succesed','file saved')
             else:
                 pass
+        
 
     def previewRes(self, data, datype=None, display=5):
         self.previewPad['state'] = 'normal'
         self.previewPad.delete(1.0, tk.END)
-        if datype == 'df':
+        if datype == 'df' or datype == 'HTML':
             data = data.head(display)
             self.previewPad.insert(tk.END, data.to_string(
                 max_cols=10, justify='center'))
@@ -163,9 +170,9 @@ class SmashGui(Tk):
                                    bg=self.btg,
                                    font=('Times New Roman', 12),
                                    width=8,
-                                   command=lambda: self.downloadRes(
-                                       data=self.subMatrix, datype='df', index=False)
-                                   )
+                                   command=lambda: self.main_thread(
+                                        self.downloadRes, args=(self.subMatrix, 'df', True, False)
+                                   ))
         btnDownloadMatrix.place(x=150, y=120)
 
         btnPreviewPvalue = Button(self.view, text='Preview',
@@ -181,8 +188,9 @@ class SmashGui(Tk):
                                    bg=self.btg,
                                    font=('Times New Roman', 12),
                                    width=8,
-                                   command=lambda: self.downloadRes(
-                                       data=None, datype='HTML'))
+                                   command=lambda: self.main_thread(
+                                       self.downloadRes, args=(self.subPvalue, 'HTML')
+                                ))
         btnDownloadPvalue.place(x=400, y=120)
 
         btnPreviewModel = Button(self.view, text='Preview',
@@ -198,8 +206,9 @@ class SmashGui(Tk):
                                   bg=self.btg,
                                   font=('Times New Roman', 12),
                                   width=8,
-                                  command=lambda: self.downloadRes(
-                                      data=None, datype='Model', escape=False))
+                                  command=lambda: self.main_thread(
+                                       self.downloadRes, args=(None, 'Model')
+                                ))
         btnDownloadModel.place(x=650, y=120)
 
         self.previewPad = Text(self.view, width=105, height=35,
@@ -455,24 +464,6 @@ class SmashGui(Tk):
         ####################### Select Fragment Type #######################
 
         ####################### Adjust Figerprint Param  Module#######################
-        # lblFolded = Label(self, text='Fold', bg=self.bg,
-        #                   font=('Times New Roman', 13))
-        # lblFolded.place(x=40, y=205)
-        # self.Folded = tk.BooleanVar()
-        # cmbFolded = ttk.Combobox(self, width=5, textvariable=self.Folded)
-        # cmbFolded['values'] = [True, False]
-        # cmbFolded.current(1)
-        # cmbFolded.place(x=103, y=205)
-        # cmbFolded['state'] = "readonly"
-        # cmbFolded.bind("<<ComboboxSelected>>", ignorenBits)
-
-        # lblnBits = Label(self, text='nBits', bg=self.bg,
-        #                  font=('Times New Roman', 13))
-        # lblnBits.place(x=180, y=205)
-        # self.nBits = tk.IntVar(value=1024)
-        # txtnBits = Entry(self, width=6, textvariable=self.nBits)
-        # txtnBits.place(x=243, y=205)
-
         lblminRadius = Label(self.fitTab, text='minRadius', bg=color,
                              font=('Times New Roman', 13))
         lblminRadius.place(x=15, y=220)
@@ -661,10 +652,6 @@ class SmashGui(Tk):
                                  width=7)
         btnGetModelFile.place(x=505, y=105)
 
-        # self.cmbPvalue = ttk.Combobox(self.predTab, width=12)'
-        # self.cmbPvalue.place(x=450, y=110)
-        # self.cmbPvalue['state'] = 'disable'
-
         color = '#ffd5b2'
         bbg = Label(self.predTab, bg=color,
                     width=500, height=7)
@@ -677,17 +664,10 @@ class SmashGui(Tk):
                             width=7)
         btnPredict.place(x=250, y=165)
 
-        # self.btnSaveLabel = Button(self.predTab, text='Save Predict Label',
-        #                            command=lambda: self.main_thread(
-        #                                self.main_predict),
-        #                            bg='#66baff',
-        #                            width=20)
-        # self.btnSaveLabel.place(x=140, y=220)
-        # self.btnSaveLabel['state'] = 'disable'
-
         self.btnSaveMatrix = Button(self.predTab, text='Save Predict Result',
-                                    command=lambda: self.downloadRes(
-                                        data=self.predMatrix, datype='df', preview=False, index=False),
+                                    command=lambda: self.main_thread(
+                                        self.downloadRes, args=(self.predMatrix, 'df', False, False)
+                                    ),
                                     bg='#66baff',
                                     width=20)
         self.btnSaveMatrix.place(x=210, y=220)
