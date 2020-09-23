@@ -26,7 +26,7 @@ __all__ = ['GetFoldedCircularFragment',
            'DrawMorganEnv']
 
 
-def _DisposeCircularBitInfo(mol, bitInfo, minRadius=1, maxFragment=True):
+def _DisposeCircularBitInfo(bitInfo, minRadius=1, maxFragment=True):
     """Dispose the bitinfo retrived from GetFoldedCircularFragment() or GetUnfoldedCircularFragment()
     *internal only*
     """
@@ -95,15 +95,14 @@ def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
         the number of bit of morgan, by default 1014
     maxFragment : bool, optional
         Whether only return the maximum fragment at a center atom, by default True
-    svg : bool, optional
-        Whether output with a svg image, by default False
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
-    fragments : tuple
-        The first element is the ID of all fragments generated,
-        and the second one is a dict whose key is the ID of output fragments,
-        value is corresponding SMARTS and svg string (is svg set as True)
+    fragments : list of list
+        The first element is the ID of all fragments generated
+        the second one is the ID of output fragments
     """
     bitInfo = {}
     fp = GetMorganFingerprintAsBitVect(mol,
@@ -112,7 +111,7 @@ def GetFoldedCircularFragment(mol, minRadius=1, maxRadius=2,
                                        bitInfo=bitInfo)
 
     fragments = _DisposeCircularBitInfo(
-            mol, bitInfo, minRadius, maxFragment
+            bitInfo, minRadius, maxFragment
         ) if disposed else bitInfo
     return fragments
 
@@ -131,15 +130,14 @@ def GetUnfoldedCircularFragment(mol, minRadius=1, maxRadius=2,
         The probable maximum radius of circular fragment, by default 2
     maxFragment : bool, optional
         Whether only return the maximum fragment at a center atom, by default True
-    svg : bool, optional
-        Whether output with a svg image, by default False
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
-    fragments : tuple
-        The first element is the ID of all fragments generated,
-        and the second one is a dict whose key is the ID of output fragments,
-        value is corresponding SMARTS and svg string (is svg set as True)
+    fragments : list of list
+        The first element is the ID of all fragments generated
+        the second one is the ID of output fragments
     """
     bitInfo = {}
     fp = GetMorganFingerprint(mol,
@@ -147,7 +145,7 @@ def GetUnfoldedCircularFragment(mol, minRadius=1, maxRadius=2,
                               bitInfo=bitInfo)
 
     fragments = _DisposeCircularBitInfo(
-            mol, bitInfo, minRadius, maxFragment
+            bitInfo, minRadius, maxFragment
         ) if disposed else bitInfo
     return fragments
 
@@ -174,13 +172,14 @@ def GetCircularFragment(mol, minRadius=1, maxRadius=2,
         Whether only return the maximum fragment at a center atom, by default True
     nJobs : int, optional
         The number of CPUs to use to do the computation, by default 1
+    disposed : bool, optional
+        Whether dispose the original bitinfo, by default True
 
     Returns
     -------
-    fragments : tuple
-        The first element is the ID of all fragments generated,
-        and the second one is a dict whose key is the ID of output fragments,
-        value is corresponding SMARTS and svg string (is svg set as True)
+    fragments : list of list
+        The first element is the ID of all fragments generated
+        the second one is the ID of output fragments
     """
     if folded:
         fragments = GetFoldedCircularFragment(mol,
@@ -194,8 +193,6 @@ def GetCircularFragment(mol, minRadius=1, maxRadius=2,
 
     return fragments
 
-
-# def ShowCircularFragment(mol, )
 
 
 if '__main__' == __name__:

@@ -338,7 +338,22 @@ class CircularLearner(BaseLearner, Circular):
         return matrix
 
     def ShowFragment(self, mol, fragmentIndex):
+        """Get the SMARTS and SVG image of circular fragment
 
+        Parameters
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            The molecule which contain the aim fragment
+        fragmentIndex : int
+            The index of aim fragment
+
+        Returns
+        -------
+        smarts : str
+            The SMARTS of fragment, which could be used for screening molecules
+        svg : str
+            The svg string of fragment
+        """ 
         smarts, svg = self.ShowCircularFragment(mol, fragmentIndex)
         return (smarts, svg)
 

@@ -54,18 +54,14 @@ class Circular:
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
-        # self.mols = mols if isinstance(mols, Iterable) else (mols, )
         self.nBits = nBits if folded else None
         self.folded = folded
         self.maxRadius = maxRadius
         self.minRadius = minRadius
         self.maxFragment = maxFragment
         self.nJobs = nJobs if nJobs >= 1 else None
-#        self.substructure = pd.DataFrame()
-#        self.matrix = pd.DataFrame()
-#        self.fragments = None
-    
-    def GetCircularFragmentLib(self, mols, disposed=True):
+
+    def GetCircularFragmentLib(self, mols):
         """Calculate circular fragments
 
         Parameters
@@ -78,7 +74,7 @@ class Circular:
         Returns
         -------
         fragments : list
-            Fragments calculated, each element is a tuple 
+            Fragments calculated, each element is a list of list
             return from GetCircularFragment() function
         """        
         func = partial(GetCircularFragment,
@@ -87,7 +83,7 @@ class Circular:
                        nBits=self.nBits,
                        folded=self.folded,
                        maxFragment=self.maxFragment,
-                       disposed=disposed)
+                       disposed=True)
 
         mols = mols if isinstance(mols, Iterable) else (mols, )
 
@@ -99,7 +95,8 @@ class Circular:
         return fragments
     
     def _getIdx(self, subArray, Array):
-        """
+        """Get index of a list to another list
+        *internal only*
         """
         uni = set(Array)&set(subArray)
         idx = [Array.index(x) for x in uni]
@@ -112,7 +109,7 @@ class Circular:
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
             The compounds used to obtain circular fragments matrix
-        svg : bool, optional
+        minNum : bool, optional
             Whether output with a svg image, by default False
 
         Returns
@@ -150,7 +147,22 @@ class Circular:
         return matrix
 
     def ShowCircularFragment(self, mol, fragmentIndex):
+        """Get the SMARTS and SVG image of circular fragment
 
+        Parameters
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            The molecule which contain the aim fragment
+        fragmentIndex : int
+            The index of aim fragment
+
+        Returns
+        -------
+        smarts : str
+            The SMARTS of fragment, which could be used for screening molecules
+        svg : str
+            The svg string of fragment
+        """ 
         fragments = GetCircularFragment(
                 mol, minRadius=self.minRadius, maxRadius=self.maxRadius,
                 nBits=self.nBits, folded=self.folded, maxFragment=self.maxFragment,
