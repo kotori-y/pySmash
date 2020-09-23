@@ -25,7 +25,7 @@ import _pickle as cPickle
 
 from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
-from IPython.display import SVG
+# from IPython.display import SVG
 from rdkit.Chem import rdDepictor
 
 try:
@@ -43,40 +43,6 @@ from scipy.stats import binom
 
 class NotFittedError(Exception):
     pass
-
-
-def Pvalue(n, m, ns, ms):
-    """Get P-value.
-
-    Parameters
-    ----------
-    n : int
-        n compounds has m compounds with aspecific activity label.
-    m : int
-        n compounds has m compounds with aspecific activity label.
-    ns : int
-        a substructure is found in ns compounds.
-    ms : int
-        the amount of those compounds with the specific activity label is ms.
-
-    Yields
-    ------
-    res : float
-        use sum() function to get the pvalue.
-
-    """
-    p_value = 0
-    for i in range(ms, ns+1):
-        numerator = Decimal(sc.math.factorial(float(ns)))
-        denominatorA = Decimal(sc.math.factorial(
-            float(i))) * Decimal(sc.math.factorial(float(ns-i)))
-        denominatorB = (m/n)**float(i)
-        denominatorC = (1 - (m/n))**(ns-i)
-        val = float(numerator/denominatorA) * denominatorB * denominatorC
-        p_value += val
-
-    return p_value
-
 
 class BaseLearner:
     """Base class for all learner in pysamsh.
