@@ -24,12 +24,12 @@ __all__ = ['GetFoldedPathFragment',
            'DrawRDKitEnv']
 
 
-def _DisposePathFragments(mol, bitInfo, maxFragment=True):
+def _DisposePathFragments(bitInfo, maxFragment=True):
     """Dispose the bitinfo retrived from GetFoldedPathFragment() or GetUnfoldedPathFragment()
     *internal only*
     """
     def func(frags):
-        sets = [set(e) for e in frags]
+        sets = [set(x) for e in frags.values() for x in e]
         us = []
         for e in sets:
             if any(e < s for s in sets):
@@ -42,7 +42,6 @@ def _DisposePathFragments(mol, bitInfo, maxFragment=True):
     allFragments = list(bitInfo.keys())
     if maxFragment:
         dic = {str(set(x)): k for k, v in bitInfo.items() for x in v}
-        bitInfo = [i for j in bitInfo.values() for i in j]
         bitInfo = func(bitInfo)
         for k in bitInfo:
             idx = dic[k]
@@ -122,7 +121,7 @@ def GetFoldedPathFragment(mol,
                         bitInfo=bitInfo)
 
     fragments = _DisposePathFragments(
-            mol, bitInfo, maxFragment=maxFragment
+            bitInfo, maxFragment=maxFragment
         ) if disposed else bitInfo
     return fragments
 
@@ -158,7 +157,7 @@ def GetUnfoldedPathFragment(mol, minPath=1, maxPath=7,
                                           bitInfo=bitInfo)
 
     fragments = _DisposePathFragments(
-            mol, bitInfo, maxFragment=maxFragment
+            bitInfo, maxFragment=maxFragment
         ) if disposed else bitInfo
     return fragments
 

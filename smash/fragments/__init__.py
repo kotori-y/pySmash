@@ -202,8 +202,6 @@ class Path:
         ----------
         mols : Iterable object, and each element is a rdkit.Chem.rdchem.Mol object
             The compounds used to obtain path-based fragment
-        svg : bool, optional
-            Whether output with a svg image, by default False
 
         Returns
         -------
@@ -220,11 +218,11 @@ class Path:
                        disposed=True)
 
         pool = Pool(self.nJobs)
-        bitInfo = pool.map_async(func, mols).get()
+        fragments = pool.map_async(func, mols).get()
         pool.close()
         pool.join()
 
-        return bitInfo
+        return fragments
     
     def _getIdx(self, subArray, Array):
         """Get index of a list to another list
@@ -246,8 +244,8 @@ class Path:
 
         Returns
         -------
-        pandas.core.frame.DataFrame
-            the fragment matrix of molecules
+        matrix : pandas.core.frame.DataFrame
+            The fragment matrix of molecules
         """
         fragments = self.GetPathFragmentLib(mols)
         
