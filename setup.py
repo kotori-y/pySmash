@@ -20,7 +20,7 @@ package_data= {'smash':['fragments/*', 'css/*']}
 
 
 setup(name="smash",  
-      version="0.1.0",
+      version="1.0",
       license="MIT",
       description="",
       long_description="",
