@@ -33,7 +33,10 @@ cirLearner = CircularLearner(
 
 
 if "__main__" == __name__:
-    sigPvalue, sigMatrix = cirLearner.fit(mols, labels)
+    sigPvalue, sigMatrix = cirLearner.fit(
+            mols, labels, 
+            accCutoff=0.7, pCutoff=0.05, Bonferroni=True
+          )
     
     print("The number of significant circular fragments: ", 
           str(len(sigPvalue)), sep='')

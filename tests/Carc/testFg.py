@@ -32,7 +32,10 @@ fgLearner = FunctionGroupLearner(
 
 
 if "__main__" == __name__:
-    sigPvalue, sigMatrix = fgLearner.fit(mols, labels)
+    sigPvalue, sigMatrix = fgLearner.fit(
+            mols, labels, 
+            accCutoff=0.7, pCutoff=0.05, Bonferroni=True
+          )
     
     print("The number of significant path fragments: ", 
           str(len(sigPvalue)), sep='')

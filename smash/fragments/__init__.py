@@ -19,6 +19,7 @@ from multiprocessing import Pool
 from multiprocessing import freeze_support
 import numpy as np
 import pandas as pd
+from rdkit import Chem
 
 try:
     from .path import *
@@ -310,8 +311,14 @@ class Path:
                 nBits=self.nBits, folded=self.folded, maxFragment=self.maxFragment,
                 disposed=False
             )
+        
         bondPath = fragments[fragmentIndex][0]
-        smarts, svg = DrawRDKitEnv(mol, bondPath)
+        try:
+            smarts, svg = DrawRDKitEnv(mol, bondPath)
+        except Chem.KekulizeException:
+            kSmi = Chem.MolToSmiles(mol, kekuleSmiles=True)
+            mol = Chem.MolFromSmarts(kSmi)
+            smarts, svg = DrawRDKitEnv(mol, bondPath)
         return smarts, svg
     
 
