@@ -1,5 +1,7 @@
 # pySmash: Python package and software for structural alerts generation and application
 
+[![Travis (.com)](https://www.travis-ci.com/kotori-y/pySmash.svg?branch=master)](https://www.travis-ci.com/github/kotori-y/pySmash) ![Codecov](https://img.shields.io/codecov/c/github/kotori-y/pySmash) [![GitHub last commit](https://img.shields.io/github/last-commit/kotori-y/pySmash)](https://github.com/kotori-y/pySmash/commits/master) [![MIT License](https://img.shields.io/badge/license-MIT-black)](https://anaconda.org/kotori_y/scopy) [![Kouhai](https://img.shields.io/badge/contributor-Ziyi-%23B3D0BE)](https://github.com/Yangziyi1997)
+
 <div align=center>
     <img src='tutorial/image/pysmash.png' width='200'>
 </div>
@@ -36,3 +38,4 @@ You can also download the executable program, which need not any dependencies, f
 ## Contact
 
 If you have questions or suggestions, please contact: kotori@cbdd.me,and oriental-cds@163.com.<br>Please see the file LICENSE for details about the "MIT" license which covers this software and its associated data and documents.
+
