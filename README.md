@@ -33,7 +33,7 @@ You can also download the executable program, which need not any dependencies, f
 
 ## Documentation
 
-(1)The online version of the documentation is available here: https://scopy.iamkotori.com/<br>(2)Quick start with package: https://pysmash.iamkotori.com/smash_tutorial.html<br>(3)Quick start with software: https://pysmash.iamkotori.com/pysmash_gui.html<br>(3)Application examples(pipelines): https://pysmash.iamkotori.com/Application.html
+(1)The online version of the documentation is available here: https://pysmash.iamkotori.com/<br>(2)Quick start with package: https://pysmash.iamkotori.com/smash_tutorial.html<br>(3)Quick start with software: https://pysmash.iamkotori.com/pysmash_gui.html<br>(3)Application examples(pipelines): https://pysmash.iamkotori.com/Application.html
 
 ## Contact
 
