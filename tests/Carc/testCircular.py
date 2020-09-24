@@ -40,3 +40,7 @@ if "__main__" == __name__:
     
     print("The shape of circular fragment matrix: ",
           str(sigMatrix.shape), sep="")
+
+    y_pred, predMatrix = cirLearner.predict(mols)
+    print(f"Predicted Label: {y_pred}")
+    print(f"Predicted Matri Shape: {predMatrix.shape}")

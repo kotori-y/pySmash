@@ -39,3 +39,7 @@ if "__main__" == __name__:
     
     print("The shape of path fragment matrix: ",
           str(sigMatrix.shape), sep="")
+
+    y_pred, predMatrix = fgLearner.predict(mols)
+    print(f"Predicted Label: {y_pred}")
+    print(f"Predicted Matri Shape: {predMatrix.shape}")

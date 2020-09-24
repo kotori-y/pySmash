@@ -27,7 +27,7 @@ labels = data.Label.values
 
 
 pathLearner = PathLearner(
-        minPath=1, maxPath=4, 
+        minPath=1, maxPath=7, 
         maxFragment=True, nJobs=-1
     )
 
@@ -40,3 +40,7 @@ if "__main__" == __name__:
     
     print("The shape of path fragment matrix: ",
           str(sigMatrix.shape), sep="")
+
+    y_pred, predMatrix = pathLearner.predict(mols)
+    print(f"Predicted Label: {y_pred}")
+    print(f"Predicted Matri: {predMatrix}")
