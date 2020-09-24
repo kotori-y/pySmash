@@ -27,8 +27,7 @@ labels = data.Label.values
 
 
 fgLearner = FunctionGroupLearner(
-        minRadius=1, maxRadius=4, 
-        maxFragment=True, nJobs=-1
+        nJobs=-1
     )
 
 

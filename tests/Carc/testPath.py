@@ -27,7 +27,7 @@ labels = data.Label.values
 
 
 pathLearner = PathLearner(
-        minRadius=1, maxRadius=4, 
+        minPath=1, maxPath=4, 
         maxFragment=True, nJobs=-1
     )
 
