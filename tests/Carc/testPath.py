@@ -12,14 +12,16 @@ Created on Wed Sep 23 21:35:44 2020
 """
 
 
+import os
 import pandas as pd
 from rdkit import Chem
 from smash import PathLearner
 
 
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+file = os.path.join(TEST_DIR, 'Carc.txt')
 
-
-data = pd.read_csv('Carc.txt', sep='\t')
+data = pd.read_csv(file, sep='\t')
 mols = data.SMILES.map(lambda x: Chem.MolFromSmiles(x))
 labels = data.Label.values
 
