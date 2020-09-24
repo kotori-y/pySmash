@@ -326,7 +326,7 @@ class FunctionGroup:
         nJobs : int, optional
             The number of CPUs to use to do the computation, by default 1
         """
-        self.nJobs = nJobs
+        self.nJobs = nJobs if nJobs > 0 else None
 
     def GetFunctionGroupFragmentLib(self, mols):
         """Calculate function-group fragments
