@@ -39,3 +39,6 @@ You can also download the executable program, which need not any dependencies, f
 
 If you have questions or suggestions, please contact: kotori@cbdd.me,and oriental-cds@163.com.<br>Please see the file LICENSE for details about the "MIT" license which covers this software and its associated data and documents.
 
+## Acknowledgement
+
+*Thanks to my colleague, [Ziyi](https://github.com/Yangziyi1997), for helping me to complete the writing of document and article.*
