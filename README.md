@@ -27,9 +27,30 @@
 >>> [sudo] python setup.py install
 ```
 
+#### PyPI [![PyPI](https://img.shields.io/pypi/v/kotori-smash?style=flat-square)](https://pypi.org/project/kotori-smash/)
+
+```shell
+>>> pip install kotori-smash
+```
+
 ### Software
 
 You can also download the executable program, which need not any dependencies, from https://github.com/kotori-y/pySmash/releases/latest/download/pysmash.tar.gz
+
+## Quick Start
+
+running test
+
+```powershell
+# testing circular fragments generation
+>>> python ./tests/Carc/testCircular.py
+
+# testing path-based fragments generation
+>>> python ./tests/Carc/testPath.py
+
+# testing function group-based fragments generation
+>>> python ./tests/Carc/testFg.py
+```
 
 ## Documentation
 
