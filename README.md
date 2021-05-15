@@ -56,6 +56,26 @@ running test
 
 (1)The online version of the documentation is available here: https://pysmash.iamkotori.com/<br>(2)Quick start with package: https://pysmash.iamkotori.com/smash_tutorial.html<br>(3)Quick start with software: https://pysmash.iamkotori.com/pysmash_gui.html<br>(3)Application examples(pipelines): https://pysmash.iamkotori.com/Application.html
 
+## Cite us
+
+Yang, Zi-Yi, et al. "PySmash: Python package and individual executable program for representative substructure generation and application." *Briefings in Bioinformatics* (2021).
+
+```latex
+@article{10.1093/bib/bbab017,
+    author = {Yang, Zi-Yi and Yang, Zhi-Jiang and Zhao, Yue and Yin, Ming-Zhu and Lu, Ai-Ping and Chen, Xiang and Liu, Shao and Hou, Ting-Jun and Cao, Dong-Sheng},
+    title = "{PySmash: Python package and individual executable program for representative substructure generation and application}",
+    journal = {Briefings in Bioinformatics},
+    year = {2021},
+    month = {03},
+    abstract = "{Substructure screening is widely applied to evaluate the molecular potency and ADMET properties of compounds in drug discovery pipelines, and it can also be used to interpret QSAR models for the design of new compounds with desirable physicochemical and biological properties. With the continuous accumulation of more experimental data, data-driven computational systems which can derive representative substructures from large chemical libraries attract more attention. Therefore, the development of an integrated and convenient tool to generate and implement representative substructures is urgently needed.In this study, PySmash, a user-friendly and powerful tool to generate different types of representative substructures, was developed. The current version of PySmash provides both a Python package and an individual executable program, which achieves ease of operation and pipeline integration. Three types of substructure generation algorithms, including circular, path-based and functional group-based algorithms, are provided. Users can conveniently customize their own requirements for substructure size, accuracy and coverage, statistical significance and parallel computation during execution. Besides, PySmash provides the function for external data screening.PySmash, a user-friendly and integrated tool for the automatic generation and implementation of representative substructures, is presented. Three screening examples, including toxicophore derivation, privileged motif detection and the integration of substructures with machine learning (ML) models, are provided to illustrate the utility of PySmash in safety profile evaluation, therapeutic activity exploration and molecular optimization, respectively. Its executable program and Python package are available at https://github.com/kotori-y/pySmash.}",
+    issn = {1477-4054},
+    doi = {10.1093/bib/bbab017},
+    url = {https://doi.org/10.1093/bib/bbab017},
+    note = {bbab017},
+    eprint = {https://academic.oup.com/bib/advance-article-pdf/doi/10.1093/bib/bbab017/36622735/bbab017.pdf},
+}
+```
+
 ## Contact
 
 If you have questions or suggestions, please contact: kotori@cbdd.me,and oriental-cds@163.com.<br>Please see the file LICENSE for details about the "MIT" license which covers this software and its associated data and documents.
