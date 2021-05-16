@@ -27,10 +27,10 @@
 >>> [sudo] python setup.py install
 ```
 
-#### PyPI [![PyPI](https://img.shields.io/pypi/v/kotori-smash?style=flat-square)](https://pypi.org/project/kotori-smash/)
+#### PyPI [![PyPI](https://img.shields.io/pypi/v/smasher?style=flat-square)](https://pypi.org/project/smasher/)
 
 ```shell
->>> pip install kotori-smash
+>>> pip install smasher
 ```
 
 ### Software
@@ -60,7 +60,7 @@ running test
 
 Yang, Zi-Yi, et al. "PySmash: Python package and individual executable program for representative substructure generation and application." *Briefings in Bioinformatics* (2021).
 
-```latex
+```
 @article{10.1093/bib/bbab017,
     author = {Yang, Zi-Yi and Yang, Zhi-Jiang and Zhao, Yue and Yin, Ming-Zhu and Lu, Ai-Ping and Chen, Xiang and Liu, Shao and Hou, Ting-Jun and Cao, Dong-Sheng},
     title = "{PySmash: Python package and individual executable program for representative substructure generation and application}",
