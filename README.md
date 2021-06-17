@@ -1,6 +1,6 @@
 # pySmash: Python package and software for structural alerts generation and application
 
-[![Travis (.com)](https://www.travis-ci.com/kotori-y/pySmash.svg?branch=master)](https://www.travis-ci.com/github/kotori-y/pySmash) ![Codecov](https://img.shields.io/codecov/c/github/kotori-y/pySmash) [![GitHub last commit](https://img.shields.io/github/last-commit/kotori-y/pySmash)](https://github.com/kotori-y/pySmash/commits/master) [![MIT License](https://img.shields.io/badge/license-MIT-black)](https://anaconda.org/kotori_y/scopy) [![Kouhai](https://img.shields.io/badge/contributor-Ziyi-%23B3D0BE)](https://github.com/Yangziyi1997) [![DOI](https://img.shields.io/badge/doi-Briefings%20in%20Bioinformatics-informational)](https://doi.org/10.1093/bib/bbab017)
+[![Travis (.com)](https://www.travis-ci.com/kotori-y/pySmash.svg?branch=master)](https://www.travis-ci.com/github/kotori-y/pySmash) [![codecov](https://codecov.io/gh/kotori-y/pySmash/branch/master/graph/badge.svg?token=xasoiUfGBS)](https://codecov.io/gh/kotori-y/pySmash) [![GitHub last commit](https://img.shields.io/github/last-commit/kotori-y/pySmash)](https://github.com/kotori-y/pySmash/commits/master) [![MIT License](https://img.shields.io/badge/license-MIT-black)](https://anaconda.org/kotori_y/scopy) [![Kouhai](https://img.shields.io/badge/contributor-Ziyi-%23B3D0BE)](https://github.com/Yangziyi1997) [![DOI](https://img.shields.io/badge/doi-Briefings%20in%20Bioinformatics-informational)](https://doi.org/10.1093/bib/bbab017)
 
 <div align=center>
     <img src='tutorial/image/pysmash.png' width='200'>
